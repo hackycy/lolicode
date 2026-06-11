@@ -8,7 +8,7 @@
 
 | 类别       | 技术选型              | 版本     | 说明                     |
 | :------- | :---------------- | :----- | :--------------------- |
-| **语言**   | TypeScript        | ^5.3+  | 严格模式，完整类型支持            |
+| **语言**   | TypeScript        | ^5.9.3+  | 严格模式，完整类型支持            |
 | **构建工具** | tsdown              | ^0.16.8+  | 零配置库打包，支持 ESM/CJS 双格式  |
 | **任务编排** | Turborepo         | ^2.9+   | Monorepo 构建缓存 + 并行任务     |
 | **测试框架** | Vitest            | ^4.1.5+  | 快速单元测试 + 快照测试          |
@@ -460,7 +460,7 @@ export function code128(content: string, options?: Code128Options): DotMatrix {
 /**
  * 快速生成 Code 39 条形码点阵
  */
-export function code39(content: string, options?: Code39Options): DotMatrix {
+export function code39(content: string, options?: BarcodeOptions): DotMatrix {
   return new Code39Encoder().encode(content, options)
 }
 
