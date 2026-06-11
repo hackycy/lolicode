@@ -1,16 +1,16 @@
 {
-  "name": "pkg-placeholder",
+  "name": "@lolicode/core",
   "type": "module",
   "version": "0.0.0",
-  "description": "_description_",
+  "description": "lolicode core",
   "author": "hackycy <hackycy@outlook.com>",
   "license": "MIT",
-  "homepage": "https://github.com/hackycy/pkg-placeholder#readme",
+  "homepage": "https://github.com/hackycy/lolicode#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hackycy/pkg-placeholder.git"
+    "url": "git+https://github.com/hackycy/lolicode.git"
   },
-  "bugs": "https://github.com/hackycy/pkg-placeholder/issues",
+  "bugs": "https://github.com/hackycy/lolicode/issues",
   "keywords": [],
   "sideEffects": false,
   "exports": {

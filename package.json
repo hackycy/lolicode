@@ -1,16 +1,17 @@
 {
+  "name": "lolicode",
   "type": "module",
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "author": "hackycy <hackycy@outlook.com>",
   "license": "MIT",
-  "homepage": "https://github.com/hackycy/pkg-placeholder#readme",
+  "homepage": "https://github.com/hackycy/lolicode#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hackycy/pkg-placeholder.git"
+    "url": "git+https://github.com/hackycy/lolicode.git"
   },
-  "bugs": "https://github.com/hackycy/pkg-placeholder/issues",
+  "bugs": "https://github.com/hackycy/lolicode/issues",
   "keywords": [],
   "sideEffects": false,
   "scripts": {

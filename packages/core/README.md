@@ -1,4 +1,4 @@
-# lolicode
+# @lolicode/core
 
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
@@ -18,9 +18,9 @@ Then for the future releases, you can run `pnpm run release` to do the release a
 
 <!-- Badges -->
 
-[npm-version-src]: https://img.shields.io/npm/v/lolicode?style=flat&colorA=080f12&colorB=1fa669
-[npm-version-href]: https://npmjs.com/package/lolicode
-[npm-downloads-src]: https://img.shields.io/npm/dm/lolicode?style=flat&colorA=080f12&colorB=1fa669
-[npm-downloads-href]: https://npmjs.com/package/lolicode
+[npm-version-src]: https://img.shields.io/npm/v/@lolicode/core?style=flat&colorA=080f12&colorB=1fa669
+[npm-version-href]: https://npmjs.com/package/@lolicode/core
+[npm-downloads-src]: https://img.shields.io/npm/dm/@lolicode/core?style=flat&colorA=080f12&colorB=1fa669
+[npm-downloads-href]: https://npmjs.com/package/@lolicode/core
 [license-src]: https://img.shields.io/github/license/hackycy/lolicode.svg?style=flat&colorA=080f12&colorB=1fa669
 [license-href]: https://github.com/hackycy/lolicode/blob/main/LICENSE
