@@ -1,22 +1,17 @@
 {
-  "name": "@lolicode/core",
+  "name": "pkg-placeholder",
   "type": "module",
   "version": "0.0.0",
-  "description": "Core package for the lolicode workspace.",
+  "description": "_description_",
   "author": "hackycy <hackycy@outlook.com>",
   "license": "MIT",
-  "homepage": "https://github.com/hackycy-collection/lolicode/tree/main/packages/core#readme",
+  "homepage": "https://github.com/hackycy/pkg-placeholder#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hackycy-collection/lolicode.git",
-    "directory": "packages/core"
+    "url": "git+https://github.com/hackycy/pkg-placeholder.git"
   },
-  "bugs": "https://github.com/hackycy-collection/lolicode/issues",
-  "keywords": [
-    "lolicode",
-    "core",
-    "typescript"
-  ],
+  "bugs": "https://github.com/hackycy/pkg-placeholder/issues",
+  "keywords": [],
   "sideEffects": false,
   "exports": {
     ".": "./dist/index.mjs",
@@ -31,11 +26,11 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "lint": "eslint .",
-    "prepublishOnly": "nr build",
+    "lint": "eslint",
+    "prepublishOnly": "pnpm build",
     "release": "bumpp",
     "start": "tsx src/index.ts",
-    "test": "vitest run",
+    "test": "vitest",
     "typecheck": "tsc"
   }
 }
