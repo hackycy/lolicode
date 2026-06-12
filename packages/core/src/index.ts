@@ -1,2 +1,191 @@
-export const one = 1
-export const two = 2
+import type {
+  BarcodeOptions,
+  BaseEncodeOptions,
+  Code128Options,
+  DataMatrixOptions,
+  DotMatrix,
+  EANOptions,
+  ITFOptions,
+  PDF417Options,
+  QRCodeOptions,
+} from './types'
+import { AztecEncoder } from './encoders/aztec'
+import { CodabarEncoder } from './encoders/barcode/codabar'
+import { Code39Encoder } from './encoders/barcode/code39'
+import { Code93Encoder } from './encoders/barcode/code93'
+import { Code128Encoder } from './encoders/barcode/code128'
+import { EAN8Encoder } from './encoders/barcode/ean8'
+import { EAN13Encoder } from './encoders/barcode/ean13'
+import { GS1_128Encoder } from './encoders/barcode/gs1_128'
+import { ITFEncoder } from './encoders/barcode/itf'
+import { MSIEncoder } from './encoders/barcode/msi'
+import { UPCAEncoder } from './encoders/barcode/upca'
+import { UPCEncoder } from './encoders/barcode/upce'
+import { DataMatrixEncoder } from './encoders/datamatrix'
+import { PDF417Encoder } from './encoders/pdf417'
+import { QREncoder } from './encoders/qrcode'
+
+// ============ 核心导出 ============
+
+export {
+  AztecEncoder,
+  CodabarEncoder,
+  Code39Encoder,
+  Code93Encoder,
+  Code128Encoder,
+  DataMatrixEncoder,
+  EAN8Encoder,
+  EAN13Encoder,
+  GS1_128Encoder,
+  ITFEncoder,
+  MSIEncoder,
+  PDF417Encoder,
+  QREncoder,
+  UPCAEncoder,
+  UPCEncoder,
+} from './encoders'
+
+export { BarcodeEncoder } from './encoders/barcode/base'
+
+export { Encoder } from './encoders/base'
+export { BaseRenderer } from './renderers/base'
+export type {
+  BarcodeOptions,
+  // 选项类型
+  BaseEncodeOptions,
+  CanvasRenderOptions,
+  Code128Options,
+  // 点阵类型
+  CodeType,
+
+  DataMatrixOptions,
+  DotMatrix,
+  DotMatrixMetadata,
+  DotValue,
+  EANOptions,
+  ErrorCorrectionLevel,
+  ITFOptions,
+  PDF417Options,
+
+  QRCodeOptions,
+  // 渲染器类型
+  Renderer,
+  SVGRenderOptions,
+  TerminalRenderOptions,
+} from './types'
+
+// ============ 类型导出 ============
+
+export {
+  addMargin,
+  invertMatrix,
+  resizeMatrix,
+  validateContent,
+} from './utils/bit-matrix'
+
+// ============ 便捷函数 ============
+
+/**
+ * 快速生成 QR Code 点阵
+ */
+export function qr(content: string, options?: QRCodeOptions): DotMatrix {
+  return new QREncoder().encode(content, options)
+}
+
+/**
+ * 快速生成 Data Matrix 点阵
+ */
+export function dataMatrix(content: string, options?: DataMatrixOptions): DotMatrix {
+  return new DataMatrixEncoder().encode(content, options)
+}
+
+/**
+ * 快速生成 PDF417 点阵
+ */
+export function pdf417(content: string, options?: PDF417Options): DotMatrix {
+  return new PDF417Encoder().encode(content, options)
+}
+
+/**
+ * 快速生成 Code 128 条形码点阵
+ */
+export function code128(content: string, options?: Code128Options): DotMatrix {
+  return new Code128Encoder().encode(content, options)
+}
+
+/**
+ * 快速生成 Code 39 条形码点阵
+ */
+export function code39(content: string, options?: BarcodeOptions): DotMatrix {
+  return new Code39Encoder().encode(content, options)
+}
+
+/**
+ * 快速生成 EAN-13 条形码点阵
+ */
+export function ean13(content: string, options?: EANOptions): DotMatrix {
+  return new EAN13Encoder().encode(content, options)
+}
+
+/**
+ * 快速生成 ITF 条形码点阵
+ */
+export function itf(content: string, options?: ITFOptions): DotMatrix {
+  return new ITFEncoder().encode(content, options)
+}
+
+/**
+ * 快速生成 EAN-8 条形码点阵
+ */
+export function ean8(content: string, options?: EANOptions): DotMatrix {
+  return new EAN8Encoder().encode(content, options)
+}
+
+/**
+ * 快速生成 UPC-A 条形码点阵
+ */
+export function upca(content: string, options?: EANOptions): DotMatrix {
+  return new UPCAEncoder().encode(content, options)
+}
+
+/**
+ * 快速生成 UPC-E 条形码点阵
+ */
+export function upce(content: string, options?: EANOptions): DotMatrix {
+  return new UPCEncoder().encode(content, options)
+}
+
+/**
+ * 快速生成 Code 93 条形码点阵
+ */
+export function code93(content: string, options?: BarcodeOptions): DotMatrix {
+  return new Code93Encoder().encode(content, options)
+}
+
+/**
+ * 快速生成 Codabar 条形码点阵
+ */
+export function codabar(content: string, options?: BarcodeOptions): DotMatrix {
+  return new CodabarEncoder().encode(content, options)
+}
+
+/**
+ * 快速生成 MSI Plessey 条形码点阵
+ */
+export function msi(content: string, options?: BarcodeOptions): DotMatrix {
+  return new MSIEncoder().encode(content, options)
+}
+
+/**
+ * 快速生成 GS1-128 条形码点阵
+ */
+export function gs1_128(content: string, options?: BarcodeOptions): DotMatrix {
+  return new GS1_128Encoder().encode(content, options)
+}
+
+/**
+ * 快速生成 Aztec Code 点阵
+ */
+export function aztec(content: string, options?: BaseEncodeOptions): DotMatrix {
+  return new AztecEncoder().encode(content, options)
+}

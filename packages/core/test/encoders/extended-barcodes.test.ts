@@ -1,0 +1,139 @@
+import { describe, expect, it } from 'vitest'
+import { CodabarEncoder } from '../../src/encoders/barcode/codabar'
+import { Code93Encoder } from '../../src/encoders/barcode/code93'
+import { MSIEncoder } from '../../src/encoders/barcode/msi'
+import { UPCEncoder } from '../../src/encoders/barcode/upce'
+
+function isValidBarcodeMatrix(result: { data: number[][], width: number, height: number }) {
+  expect(result.data.length).toBe(result.height)
+  for (const row of result.data) {
+    expect(row.length).toBe(result.width)
+    for (const cell of row) {
+      expect(cell === 0 || cell === 1).toBe(true)
+    }
+  }
+}
+
+describe('uPCEncoder', () => {
+  const encoder = new UPCEncoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('upce')
+  })
+
+  it('validates 6-8 digit strings', () => {
+    expect(encoder.validate('012345')).toBe(true)
+    expect(encoder.validate('0123456')).toBe(true)
+    expect(encoder.validate('01234567')).toBe(true)
+    expect(encoder.validate('12345')).toBe(false)
+    expect(encoder.validate('')).toBe(false)
+  })
+
+  it('encodes to valid matrix', () => {
+    const result = encoder.encode('012345')
+    expect(result.metadata.type).toBe('upce')
+    isValidBarcodeMatrix(result)
+  })
+
+  it('produces consistent output', () => {
+    const a = encoder.encode('012345')
+    const b = encoder.encode('012345')
+    expect(a.data).toEqual(b.data)
+  })
+
+  it('has correct width (51 modules + margin)', () => {
+    const result = encoder.encode('012345', { margin: 0 })
+    expect(result.width).toBe(51)
+  })
+})
+
+describe('code93Encoder', () => {
+  const encoder = new Code93Encoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('code93')
+  })
+
+  it('validates valid characters', () => {
+    expect(encoder.validate('ABC 123')).toBe(true)
+    expect(encoder.validate('TEST-123')).toBe(true)
+    expect(encoder.validate('')).toBe(false)
+  })
+
+  it('encodes to valid matrix', () => {
+    const result = encoder.encode('CODE 93')
+    expect(result.metadata.type).toBe('code93')
+    isValidBarcodeMatrix(result)
+  })
+
+  it('produces consistent output', () => {
+    const a = encoder.encode('TEST')
+    const b = encoder.encode('TEST')
+    expect(a.data).toEqual(b.data)
+  })
+
+  it('throws on invalid content', () => {
+    expect(() => encoder.encode('')).toThrow()
+  })
+})
+
+describe('codabarEncoder', () => {
+  const encoder = new CodabarEncoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('codabar')
+  })
+
+  it('validates valid characters', () => {
+    expect(encoder.validate('A12345B')).toBe(true)
+    expect(encoder.validate('123456')).toBe(true)
+    expect(encoder.validate('')).toBe(false)
+  })
+
+  it('encodes to valid matrix', () => {
+    const result = encoder.encode('A12345B')
+    expect(result.metadata.type).toBe('codabar')
+    isValidBarcodeMatrix(result)
+  })
+
+  it('produces consistent output', () => {
+    const a = encoder.encode('123456')
+    const b = encoder.encode('123456')
+    expect(a.data).toEqual(b.data)
+  })
+
+  it('throws on invalid content', () => {
+    expect(() => encoder.encode('')).toThrow()
+  })
+})
+
+describe('mSIEncoder', () => {
+  const encoder = new MSIEncoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('msi')
+  })
+
+  it('validates numeric content', () => {
+    expect(encoder.validate('1234567890')).toBe(true)
+    expect(encoder.validate('12345')).toBe(true)
+    expect(encoder.validate('')).toBe(false)
+    expect(encoder.validate('abc')).toBe(false)
+  })
+
+  it('encodes to valid matrix', () => {
+    const result = encoder.encode('1234567890')
+    expect(result.metadata.type).toBe('msi')
+    isValidBarcodeMatrix(result)
+  })
+
+  it('produces consistent output', () => {
+    const a = encoder.encode('12345')
+    const b = encoder.encode('12345')
+    expect(a.data).toEqual(b.data)
+  })
+
+  it('throws on invalid content', () => {
+    expect(() => encoder.encode('')).toThrow()
+  })
+})

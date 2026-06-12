@@ -1,0 +1,1 @@
+export { QREncoder } from './encoder'

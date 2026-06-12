@@ -1,0 +1,141 @@
+import { describe, expect, it } from 'vitest'
+import { Code39Encoder } from '../../src/encoders/barcode/code39'
+import { Code128Encoder } from '../../src/encoders/barcode/code128'
+import { EAN13Encoder } from '../../src/encoders/barcode/ean13'
+import { ITFEncoder } from '../../src/encoders/barcode/itf'
+import { code39, code128, ean13, itf } from '../../src/index'
+
+function isValidBarcodeMatrix(result: { data: number[][], width: number, height: number }) {
+  expect(result.data.length).toBe(result.height)
+  for (const row of result.data) {
+    expect(row.length).toBe(result.width)
+    for (const cell of row) {
+      expect(cell === 0 || cell === 1).toBe(true)
+    }
+  }
+}
+
+describe('code128Encoder', () => {
+  const encoder = new Code128Encoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('code128')
+  })
+
+  it('validates ASCII content', () => {
+    expect(encoder.validate('Hello World')).toBe(true)
+    expect(encoder.validate('')).toBe(false)
+  })
+
+  it('rejects non-printable ASCII', () => {
+    expect(encoder.validate(String.fromCharCode(0))).toBe(false)
+    expect(encoder.validate(String.fromCharCode(31))).toBe(false)
+  })
+
+  it('encodes to valid matrix', () => {
+    const result = encoder.encode('ABC123')
+    expect(result.metadata.type).toBe('code128')
+    expect(result.metadata.contentLength).toBe(6)
+    isValidBarcodeMatrix(result)
+  })
+
+  it('produces consistent output', () => {
+    const a = encoder.encode('TEST')
+    const b = encoder.encode('TEST')
+    expect(a.data).toEqual(b.data)
+  })
+
+  it('code128 convenience function works', () => {
+    const result = code128('TEST')
+    expect(result.metadata.type).toBe('code128')
+  })
+})
+
+describe('code39Encoder', () => {
+  const encoder = new Code39Encoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('code39')
+  })
+
+  it('validates uppercase content', () => {
+    expect(encoder.validate('ABC 123')).toBe(true)
+    expect(encoder.validate('')).toBe(false)
+  })
+
+  it('accepts lowercase (auto-uppercased)', () => {
+    expect(encoder.validate('abc')).toBe(true)
+  })
+
+  it('rejects invalid chars', () => {
+    expect(encoder.validate('abc@123')).toBe(false)
+  })
+
+  it('encodes to valid matrix', () => {
+    const result = encoder.encode('TEST')
+    expect(result.metadata.type).toBe('code39')
+    isValidBarcodeMatrix(result)
+  })
+
+  it('code39 convenience function works', () => {
+    const result = code39('TEST')
+    expect(result.metadata.type).toBe('code39')
+  })
+})
+
+describe('eAN13Encoder', () => {
+  const encoder = new EAN13Encoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('ean13')
+  })
+
+  it('validates 12-13 digit strings', () => {
+    expect(encoder.validate('400638133393')).toBe(true)
+    expect(encoder.validate('4006381333931')).toBe(true)
+    expect(encoder.validate('12345')).toBe(false)
+  })
+
+  it('encodes 12-digit content with auto check digit', () => {
+    const result = encoder.encode('400638133393')
+    expect(result.metadata.type).toBe('ean13')
+    expect(result.width).toBe(95 + 8) // 95 modules + 2*4 margin
+    isValidBarcodeMatrix(result)
+  })
+
+  it('encodes 13-digit content', () => {
+    const result = encoder.encode('4006381333931')
+    expect(result.metadata.type).toBe('ean13')
+    isValidBarcodeMatrix(result)
+  })
+
+  it('ean13 convenience function works', () => {
+    const result = ean13('400638133393')
+    expect(result.metadata.type).toBe('ean13')
+  })
+})
+
+describe('iTFEncoder', () => {
+  const encoder = new ITFEncoder()
+
+  it('returns correct type', () => {
+    expect(encoder.getType()).toBe('itf')
+  })
+
+  it('validates even-length digit strings', () => {
+    expect(encoder.validate('1234')).toBe(true)
+    expect(encoder.validate('123')).toBe(false)
+    expect(encoder.validate('')).toBe(false)
+  })
+
+  it('encodes to valid matrix', () => {
+    const result = encoder.encode('1234567890')
+    expect(result.metadata.type).toBe('itf')
+    isValidBarcodeMatrix(result)
+  })
+
+  it('itf convenience function works', () => {
+    const result = itf('1234')
+    expect(result.metadata.type).toBe('itf')
+  })
+})
