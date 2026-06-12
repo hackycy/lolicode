@@ -153,6 +153,8 @@ export interface BarcodeSymbol {
 export interface DotMatrixMetadata {
   /** 码制类型 */
   type: CodeType
+  /** 码制族群，用于渲染器选择默认布局策略 */
+  family: CodeFamily
   /** QR Code 专用：版本号 (1-40) */
   version?: number
   /** QR Code 专用：纠错等级 */
@@ -183,6 +185,11 @@ export type CodeType
     | 'upca'
     | 'upce'
     | 'itf'
+
+/**
+ * 码制族群
+ */
+export type CodeFamily = 'matrix' | 'linear'
 
 /**
  * QR Code 纠错等级
@@ -367,9 +374,30 @@ export interface Renderer<TOutput, TOptions = object> {
 }
 
 /**
+ * 渲染意图：scan 保留可扫描/精确几何，preview 优先适配展示介质
+ */
+export type RenderIntent = 'scan' | 'preview'
+
+/**
+ * 渲染视口约束
+ */
+export interface RenderViewport {
+  maxWidth?: number
+  maxHeight?: number
+}
+
+/**
+ * 所有渲染器共享的基础选项
+ */
+export interface BaseRenderOptions {
+  intent?: RenderIntent
+  viewport?: RenderViewport
+}
+
+/**
  * Canvas 渲染选项
  */
-export interface CanvasRenderOptions {
+export interface CanvasRenderOptions extends BaseRenderOptions {
   /** Canvas 元素或 2D Context */
   target: HTMLCanvasElement | CanvasRenderingContext2D
   /** 模块大小（像素），默认 4 */
@@ -383,7 +411,7 @@ export interface CanvasRenderOptions {
 /**
  * SVG 渲染选项
  */
-export interface SVGRenderOptions {
+export interface SVGRenderOptions extends BaseRenderOptions {
   /** 模块大小（像素），默认 4 */
   moduleSize?: number
   /** 前景色，默认 '#000000' */
@@ -397,23 +425,23 @@ export interface SVGRenderOptions {
 /**
  * 终端渲染选项
  */
-export interface TerminalRenderOptions {
+export interface TerminalRenderOptions extends BaseRenderOptions {
   /** 渲染模式；完整一维条码 DotMatrix 默认 bars，其它矩阵默认 utf8 */
   mode?: 'utf8' | 'ansi' | 'small' | 'bars'
   /** 终端层附加空白边距 */
   margin?: number
   /** 是否反转填充和空白 */
   invert?: boolean
-  /** bars 模式输出高度，默认 6 */
+  /** bars 模式输出高度；一维条码 preview 默认 4，scan 默认 6 */
   barHeight?: number
-  /** bars 模式最大输出列数；用于终端预览，默认不压缩 */
+  /** bars 模式最大输出列数；优先使用 viewport.maxWidth */
   maxWidth?: number
 }
 ```
 
-终端渲染器应优先接收完整 `DotMatrix`，以便根据 `metadata.type` 选择合适默认模式。二维码/Data Matrix/Aztec 等二维符号默认使用 `utf8` 半块压缩；一维条码默认使用 `bars`，将纵向重复的条码矩阵投影为固定高度的整块竖条，避免二维码式半块压缩在条码上下留白处生成 `▀`/`▄` 噪声。调用方传入裸 `DotValue[][]` 时，渲染器无法获知码制语义，因此只使用显式 `mode` 或默认 `utf8`。
+终端渲染器应优先接收完整 `DotMatrix`，以便根据 `metadata.family` 选择合适默认模式。二维码/Data Matrix/Aztec 等二维符号默认使用 `utf8` 半块压缩；一维条码默认使用 `bars`，将纵向重复的条码矩阵投影为固定高度的整块竖条，避免二维码式半块压缩在条码上下留白处生成 `▀`/`▄` 噪声。调用方传入裸 `DotValue[][]` 时，渲染器无法获知码制语义，因此只使用显式 `mode` 或默认 `utf8`。
 
-一维条码的精确宽度可能超过常见终端宽度，终端自动换行会破坏视觉结构。示例、playground 或其它终端预览场景应显式设置 `maxWidth`，把条码压缩为“可读预览”；需要保留模块精确性的渲染器（SVG、Canvas、PNG）不应使用 `maxWidth`。
+一维条码的精确宽度可能超过常见终端宽度，终端自动换行会破坏视觉结构。`intent` 是跨渲染器的高层策略：`preview` 允许终端 renderer 根据视口约束压缩为可读预览，默认把一维条码限制到 60 列和 4 行；`scan` 保留矩阵精确几何，不自动压缩。SVG、Canvas、PNG 等像素介质也应复用 `intent` 和 `viewport`，但默认优先保留精确几何。
 
 ---
 
@@ -548,7 +576,7 @@ console.log(qrMatrix)
 //   data: [[0,0,0,...], [0,1,1,...], ...],
 //   width: 25,
 //   height: 25,
-//   metadata: { type: 'qrcode', version: 2, errorLevel: 'H', ... }
+//   metadata: { type: 'qrcode', family: 'matrix', version: 2, errorLevel: 'H', ... }
 // }
 
 // 生成 Code 128 条形码点阵

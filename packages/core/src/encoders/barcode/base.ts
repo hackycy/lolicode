@@ -48,6 +48,7 @@ export abstract class BarcodeEncoder extends Encoder<BarcodeOptions> {
       width: modules.length,
       metadata: {
         type: this.getType(),
+        family: 'linear',
         contentLength: content.length,
         generatedAt: Date.now(),
       },

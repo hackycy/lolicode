@@ -1,30 +1,10 @@
-import type { CodeType, DotMatrix as CoreDotMatrix } from '@lolicode/core'
+import type { DotMatrix as CoreDotMatrix, TerminalRenderOptions } from '@lolicode/core'
+
+export type { TerminalRenderOptions } from '@lolicode/core'
 
 type DotValue = 0 | 1
 type DotMatrixData = DotValue[][]
 type TerminalInput = CoreDotMatrix | DotMatrixData
-
-export interface TerminalRenderOptions {
-  mode?: 'utf8' | 'ansi' | 'small' | 'bars'
-  margin?: number
-  invert?: boolean
-  barHeight?: number
-  maxWidth?: number
-}
-
-const BARCODE_TYPES = new Set<CodeType>([
-  'code128',
-  'code39',
-  'code93',
-  'codabar',
-  'gs1_128',
-  'msi',
-  'ean13',
-  'ean8',
-  'upca',
-  'upce',
-  'itf',
-])
 
 function isCoreDotMatrix(input: TerminalInput): input is CoreDotMatrix {
   return !Array.isArray(input)
@@ -35,7 +15,7 @@ function getMatrixData(input: TerminalInput): DotMatrixData {
 }
 
 function isBarcodeMatrix(input: TerminalInput): boolean {
-  return isCoreDotMatrix(input) && BARCODE_TYPES.has(input.metadata.type)
+  return isCoreDotMatrix(input) && input.metadata.family === 'linear'
 }
 
 function addMargin(matrix: DotMatrixData, margin: number): DotMatrixData {
@@ -186,11 +166,13 @@ function renderBars(matrix: DotMatrixData, invert: boolean, height: number, maxW
 }
 
 export function renderTerminal(input: TerminalInput, options?: TerminalRenderOptions): string {
-  const mode = options?.mode ?? (isBarcodeMatrix(input) ? 'bars' : 'utf8')
+  const isBarcode = isBarcodeMatrix(input)
+  const intent = options?.intent ?? 'preview'
+  const mode = options?.mode ?? (isBarcode ? 'bars' : 'utf8')
   const margin = options?.margin ?? 0
   const invert = options?.invert ?? false
-  const barHeight = options?.barHeight ?? 6
-  const maxWidth = options?.maxWidth
+  const barHeight = options?.barHeight ?? (isBarcode && intent === 'preview' ? 4 : 6)
+  const maxWidth = options?.viewport?.maxWidth ?? options?.maxWidth ?? (isBarcode && intent === 'preview' ? 60 : undefined)
 
   const padded = addMargin(getMatrixData(input), margin)
 

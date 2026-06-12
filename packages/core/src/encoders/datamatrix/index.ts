@@ -95,6 +95,7 @@ export class DataMatrixEncoder extends Encoder<DataMatrixOptions> {
       height: sizeInfo.rows,
       metadata: {
         type: 'datamatrix',
+        family: 'matrix',
         generatedAt: Date.now(),
       },
     }

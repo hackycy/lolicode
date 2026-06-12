@@ -35,6 +35,7 @@ describe('code128Encoder', () => {
   it('encodes to valid matrix', () => {
     const result = encoder.encode('ABC123')
     expect(result.metadata.type).toBe('code128')
+    expect(result.metadata.family).toBe('linear')
     expect(result.metadata.contentLength).toBe(6)
     isValidBarcodeMatrix(result)
   })
@@ -44,6 +45,7 @@ describe('code128Encoder', () => {
     expect(symbol.width).toBe(encoder.getModuleCount('ABC123'))
     expect(symbol.modules).toHaveLength(symbol.width)
     expect(symbol.metadata.type).toBe('code128')
+    expect(symbol.metadata.family).toBe('linear')
   })
 
   it('uses independent barcode layout defaults', () => {

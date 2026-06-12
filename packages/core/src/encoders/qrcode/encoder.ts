@@ -352,6 +352,7 @@ export class QREncoder extends Encoder<QRCodeOptions> {
       height: matrixSize,
       metadata: {
         type: 'qrcode',
+        family: 'matrix',
         version,
         errorLevel,
         generatedAt: Date.now(),

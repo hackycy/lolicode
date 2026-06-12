@@ -38,6 +38,7 @@ describe('qREncoder', () => {
     it('encodes numeric content', () => {
       const result = encoder.encode('0123456789')
       expect(result.metadata.type).toBe('qrcode')
+      expect(result.metadata.family).toBe('matrix')
       expect(result.metadata.version).toBeGreaterThanOrEqual(1)
       expect(result.metadata.version).toBeLessThanOrEqual(40)
     })

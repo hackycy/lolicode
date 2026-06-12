@@ -18,9 +18,30 @@ export interface Renderer<TOutput, TOptions = object> {
 }
 
 /**
+ * 渲染意图：scan 保留可扫描/精确几何，preview 优先适配展示介质
+ */
+export type RenderIntent = 'scan' | 'preview'
+
+/**
+ * 渲染视口约束
+ */
+export interface RenderViewport {
+  maxWidth?: number
+  maxHeight?: number
+}
+
+/**
+ * 所有渲染器共享的基础选项
+ */
+export interface BaseRenderOptions {
+  intent?: RenderIntent
+  viewport?: RenderViewport
+}
+
+/**
  * Canvas 渲染选项
  */
-export interface CanvasRenderOptions {
+export interface CanvasRenderOptions extends BaseRenderOptions {
   /** Canvas 元素或 2D Context（浏览器环境） */
   target: unknown
   /** 模块大小（像素），默认 4 */
@@ -34,7 +55,7 @@ export interface CanvasRenderOptions {
 /**
  * SVG 渲染选项
  */
-export interface SVGRenderOptions {
+export interface SVGRenderOptions extends BaseRenderOptions {
   /** 模块大小（像素），默认 4 */
   moduleSize?: number
   /** 前景色，默认 '#000000' */
@@ -48,11 +69,15 @@ export interface SVGRenderOptions {
 /**
  * 终端渲染选项
  */
-export interface TerminalRenderOptions {
-  /** 空白字符，默认 '  '（两个空格） */
-  emptyChar?: string
-  /** 填充字符，默认 '██' */
-  filledChar?: string
-  /** 是否使用颜色 */
-  useColor?: boolean
+export interface TerminalRenderOptions extends BaseRenderOptions {
+  /** 渲染模式；完整一维条码 DotMatrix 默认 bars，其它矩阵默认 utf8 */
+  mode?: 'utf8' | 'ansi' | 'small' | 'bars'
+  /** 终端层附加空白边距 */
+  margin?: number
+  /** 是否反转填充和空白 */
+  invert?: boolean
+  /** bars 模式输出高度，默认 6 */
+  barHeight?: number
+  /** bars 模式最大输出列数；优先使用 viewport.maxWidth */
+  maxWidth?: number
 }

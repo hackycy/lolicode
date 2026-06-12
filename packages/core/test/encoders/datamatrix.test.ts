@@ -17,6 +17,7 @@ describe('dataMatrixEncoder', () => {
   it('encodes to square matrix by default', () => {
     const result = encoder.encode('HELLO')
     expect(result.metadata.type).toBe('datamatrix')
+    expect(result.metadata.family).toBe('matrix')
     expect(result.width).toBe(result.height)
     expect(result.data.length).toBe(result.height)
     for (const row of result.data) {

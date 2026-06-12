@@ -54,8 +54,10 @@ export type {
   BarcodeSymbol,
   // 选项类型
   BaseEncodeOptions,
+  BaseRenderOptions,
   CanvasRenderOptions,
   Code128Options,
+  CodeFamily,
   // 点阵类型
   CodeType,
 
@@ -71,6 +73,8 @@ export type {
   QRCodeOptions,
   // 渲染器类型
   Renderer,
+  RenderIntent,
+  RenderViewport,
   SVGRenderOptions,
   TerminalRenderOptions,
 } from './types'

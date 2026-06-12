@@ -280,6 +280,7 @@ export class AztecEncoder extends Encoder<BaseEncodeOptions> {
       height,
       metadata: {
         type: 'aztec',
+        family: 'matrix',
         contentLength: content.length,
         generatedAt: Date.now(),
       },

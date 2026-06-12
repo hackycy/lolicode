@@ -32,6 +32,8 @@ export interface BarcodeSymbol {
 export interface DotMatrixMetadata {
   /** 码制类型 */
   type: CodeType
+  /** 码制族群，用于渲染器选择默认布局策略 */
+  family: CodeFamily
   /** QR Code 专用：版本号 (1-40) */
   version?: number
   /** QR Code 专用：纠错等级 */
@@ -62,6 +64,11 @@ export type CodeType
     | 'upca'
     | 'upce'
     | 'itf'
+
+/**
+ * 码制族群
+ */
+export type CodeFamily = 'matrix' | 'linear'
 
 /**
  * QR Code 纠错等级

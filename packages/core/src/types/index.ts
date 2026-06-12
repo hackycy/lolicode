@@ -1,5 +1,6 @@
 export type {
   BarcodeSymbol,
+  CodeFamily,
   CodeType,
   DotMatrix,
   DotMatrixMetadata,
@@ -19,8 +20,11 @@ export type {
 } from './options'
 
 export type {
+  BaseRenderOptions,
   CanvasRenderOptions,
   Renderer,
+  RenderIntent,
+  RenderViewport,
   SVGRenderOptions,
   TerminalRenderOptions,
 } from './render'

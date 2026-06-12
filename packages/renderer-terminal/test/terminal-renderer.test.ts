@@ -121,6 +121,36 @@ describe('renderTerminal', () => {
       expect(result).toContain('█')
     })
 
+    it('uses preview defaults for barcode width and height', () => {
+      const result = renderTerminal(code128('Hello'))
+      const lines = result.split('\n')
+
+      expect(lines).toHaveLength(4)
+      expect(lines.every(line => line.length <= 60)).toBe(true)
+      expect(result).not.toContain('▀')
+      expect(result).not.toContain('▄')
+    })
+
+    it('keeps barcode geometry unbounded for scan intent', () => {
+      const matrix = code128('Hello')
+      const result = renderTerminal(matrix, { intent: 'scan' })
+      const lines = result.split('\n')
+
+      expect(lines).toHaveLength(6)
+      expect(lines.every(line => line.length === matrix.width)).toBe(true)
+      expect(matrix.width).toBeGreaterThan(60)
+    })
+
+    it('uses viewport constraints before maxWidth', () => {
+      const result = renderTerminal(code128('Hello'), {
+        barHeight: 1,
+        maxWidth: 50,
+        viewport: { maxWidth: 32 },
+      })
+
+      expect(result.length).toBe(32)
+    })
+
     it('keeps raw matrix input on utf8 mode by default', () => {
       const result = renderTerminal([
         [1],
@@ -215,7 +245,7 @@ describe('terminalRenderer', () => {
       ],
       width: 3,
       height: 3,
-      metadata: { type: 'qrcode' as const, generatedAt: Date.now() },
+      metadata: { type: 'qrcode' as const, family: 'matrix' as const, generatedAt: Date.now() },
     }
     const result = renderer.render(matrix)
     expect(result).toBe('▀▄▀\n▀ ▀')
@@ -240,7 +270,7 @@ describe('terminalRenderer', () => {
       ],
       width: 2,
       height: 2,
-      metadata: { type: 'qrcode' as const, generatedAt: Date.now() },
+      metadata: { type: 'qrcode' as const, family: 'matrix' as const, generatedAt: Date.now() },
     }
     const result = renderer.render(matrix, { mode: 'ansi' })
     expect(result).toContain('\x1B[40m')

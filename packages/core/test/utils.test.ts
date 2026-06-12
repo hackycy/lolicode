@@ -9,7 +9,7 @@ function makeMatrix(data: DotValue[][]): DotMatrix {
     data,
     width: data[0]?.length ?? 0,
     height: data.length,
-    metadata: { type: 'qrcode', generatedAt: 0 },
+    metadata: { type: 'qrcode', family: 'matrix', generatedAt: 0 },
   }
 }
 

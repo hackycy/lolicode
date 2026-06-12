@@ -150,6 +150,7 @@ export class PDF417Encoder extends Encoder<PDF417Options> {
       height: rows,
       metadata: {
         type: 'pdf417',
+        family: 'matrix',
         generatedAt: Date.now(),
       },
     }
