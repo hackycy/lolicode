@@ -131,6 +131,15 @@ importers:
         specifier: workspace:^
         version: link:../core
 
+  playground:
+    dependencies:
+      '@lolicode/core':
+        specifier: workspace:^
+        version: link:../packages/core
+      '@lolicode/renderer-terminal':
+        specifier: workspace:^
+        version: link:../packages/renderer-terminal
+
 packages:
 
   '@antfu/eslint-config@6.7.3':

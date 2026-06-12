@@ -5,4 +5,11 @@ export default antfu(
   {
     type: 'lib',
   },
+  {
+    files: ['playground/**'],
+    rules: {
+      'no-console': 'off',
+      'ts/explicit-function-return-type': 'off',
+    },
+  },
 )
