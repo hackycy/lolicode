@@ -37,8 +37,8 @@ export class MSIEncoder extends BarcodeEncoder {
   }
 
   getModuleCount(content: string): number {
-    // 起始条(1) + 数据(content.length * 12) + 校验位(12) + 终止条(1)
-    return 2 + (content.length + 1) * 12
+    // 起始宽条(2) + 数据((content.length + 1) * 12) + 终止宽条(2) + 间隔(2)
+    return 2 + (content.length + 1) * 12 + 2
   }
 
   encodeToModules(content: string): number[] {
@@ -48,8 +48,8 @@ export class MSIEncoder extends BarcodeEncoder {
 
     const modules: number[] = []
 
-    // 起始条（窄条-窄空-窄条）
-    modules.push(1)
+    // 起始条（宽条，2 模块）
+    modules.push(2)
 
     // 数据位
     for (let i = 0; i < fullContent.length; i++) {
@@ -62,10 +62,9 @@ export class MSIEncoder extends BarcodeEncoder {
       }
     }
 
-    // 终止条（宽条-窄空-窄条）
+    // 终止条（窄空-宽条）
+    modules.push(1)
     modules.push(2)
-    modules.push(1)
-    modules.push(1)
 
     return this.normalizeModules(modules)
   }

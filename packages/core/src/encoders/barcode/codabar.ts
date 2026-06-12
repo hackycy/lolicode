@@ -4,7 +4,9 @@ import { BarcodeEncoder } from './base'
 // Codabar 字符集
 const CODABAR_CHARS = '0123456789-$:/.+ABCD'
 
-// Codabar 编码表（每个字符的条空模式，4 条 + 3 空）
+// Codabar 编码表（每个字符的条空位模式）
+// 位模式中 '1'=条, '0'=空，相邻相同类型合并后得到实际宽度
+// 0-9, -, $ 使用 9 位模式；:, /, ., +, A, B, C, D 使用 10 位模式
 const CODABAR_PATTERNS: string[] = [
   '101010011', // 0
   '101011001', // 1
@@ -53,8 +55,14 @@ export class CodabarEncoder extends BarcodeEncoder {
   }
 
   getModuleCount(content: string): number {
-    // 每个字符 9 模块（4 条 + 3 空），字符间有窄空间隔
-    return content.length * 9 + (content.length - 1) * 1
+    // 每字符模块数取决于位模式长度（9 或 10），字符间有窄空间隔
+    let total = 0
+    for (let i = 0; i < content.length; i++) {
+      const idx = CODABAR_CHARS.indexOf(content[i])
+      total += CODABAR_PATTERNS[idx].length
+    }
+    total += Math.max(0, content.length - 1) // 字符间窄空间隔
+    return total
   }
 
   encodeToModules(content: string): number[] {

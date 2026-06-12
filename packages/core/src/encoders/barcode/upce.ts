@@ -105,23 +105,27 @@ export class UPCEncoder extends BarcodeEncoder {
   }
 
   private expandToUPCA(digits: number[]): number[] {
-    // UPC-E 到 UPC-A 的转换（简化版本）
-    // 基于 UPC-E 的最后一位数字
-    const lastDigit = digits[5]
-    const manufacturer = digits.slice(0, 3).join('')
-    const product = digits.slice(3, 5).join('')
+    // UPC-E 到 UPC-A 的转换
+    // digits: 6 位数据 + 1 位校验 = 7 位
+    // 展开规则基于校验位（第 7 位）
+    const checkDigit = digits[6]
+    const d = digits.slice(0, 6)
 
-    switch (lastDigit) {
+    switch (checkDigit) {
       case 0:
       case 1:
       case 2:
-        return `0${manufacturer}${lastDigit}0000${product}`.split('').map(Number)
+        // 0 MMM 0000 0PP X (制造商 3 位, 产品 2 位)
+        return `0${d[0]}${d[1]}${d[2]}${checkDigit}00000${d[3]}${d[4]}`.split('').map(Number)
       case 3:
-        return `0${manufacturer}00000${product}`.split('').map(Number)
+        // 0 MMM 00000 PP X (制造商 3 位, 产品 2 位)
+        return `0${d[0]}${d[1]}${d[2]}00000${d[3]}${d[4]}`.split('').map(Number)
       case 4:
-        return `0${manufacturer}0000${product}`.split('').map(Number)
+        // 0 MMMM 0000 P X (制造商 4 位, 产品 1 位)
+        return `0${d[0]}${d[1]}${d[2]}${d[3]}0000${d[4]}`.split('').map(Number)
       default:
-        return `0${manufacturer}0000${product}${lastDigit}`.split('').map(Number)
+        // 0 MMMMM 0000 P X (制造商 5 位, 产品 1 位)
+        return `0${d[0]}${d[1]}${d[2]}${d[3]}${d[4]}0000${d[5]}`.split('').map(Number)
     }
   }
 

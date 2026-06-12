@@ -740,23 +740,22 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     }
     matrix[8][7] = ((formatInfo >> 8) & 1) as DotValue
     matrix[8][8] = ((formatInfo >> 7) & 1) as DotValue
-    matrix[7][8] = ((formatInfo >> 6) & 1) as DotValue
 
     // 水平格式信息（右）
     for (let i = 0; i < 6; i++) {
-      matrix[8][size - 1 - i] = ((formatInfo >> (5 - i)) & 1) as DotValue
+      matrix[8][size - 2 - i] = ((formatInfo >> i) & 1) as DotValue
     }
-    matrix[8][size - 7] = ((formatInfo >> 0) & 1) as DotValue
+    matrix[8][size - 8] = ((formatInfo >> 6) & 1) as DotValue
 
     // 垂直格式信息（上）
     for (let i = 0; i < 6; i++) {
       matrix[i][8] = ((formatInfo >> (14 - i)) & 1) as DotValue
     }
-    matrix[7][8] = ((formatInfo >> 6) & 1) as DotValue
+    matrix[7][8] = ((formatInfo >> 8) & 1) as DotValue
 
     // 垂直格式信息（下）
-    for (let i = 0; i < 8; i++) {
-      matrix[size - 1 - i][8] = ((formatInfo >> (7 - i)) & 1) as DotValue
+    for (let i = 0; i < 7; i++) {
+      matrix[size - 2 - i][8] = ((formatInfo >> i) & 1) as DotValue
     }
   }
 

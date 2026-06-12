@@ -114,6 +114,7 @@ const CODE128_PATTERNS: number[][] = [
 
 const CODE_B_START = 104
 const CODE_C_START = 105
+const CODE_C_SWITCH = 99
 const FNC1 = 102
 const STOP_CODE = 106
 
@@ -202,6 +203,10 @@ export class GS1_128Encoder extends BarcodeEncoder {
     if (digits.length % 2 !== 0) {
       codes.push(Number.parseInt(digits[0]) + 16) // Code B: 数字字符值 = ASCII - 32 = digit + 16
       i = 1
+      // 切换到 Code C 模式
+      if (i < digits.length) {
+        codes.push(CODE_C_SWITCH)
+      }
     }
 
     // 剩余数字用 Code C 模式（每两位一组）

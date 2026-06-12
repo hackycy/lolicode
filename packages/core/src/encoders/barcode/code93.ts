@@ -152,36 +152,23 @@ export class Code93Encoder extends BarcodeEncoder {
   private convertToBarSpace(bitModules: number[]): number[] {
     // 将 bit 模式转换为条空序列
     const modules: number[] = []
-    let currentBit = '1'
-    let count = 0
+    if (bitModules.length === 0)
+      return modules
 
-    for (const bit of bitModules) {
-      if (bit === 1) {
-        if (currentBit === '1') {
-          count++
-        }
-        else {
-          if (count > 0)
-            modules.push(count)
-          currentBit = '1'
-          count = 1
-        }
+    let currentBit = bitModules[0]
+    let count = 1
+
+    for (let i = 1; i < bitModules.length; i++) {
+      if (bitModules[i] === currentBit) {
+        count++
       }
       else {
-        if (currentBit === '0') {
-          count++
-        }
-        else {
-          if (count > 0)
-            modules.push(count)
-          currentBit = '0'
-          count = 1
-        }
+        modules.push(count)
+        currentBit = bitModules[i]
+        count = 1
       }
     }
-
-    if (count > 0)
-      modules.push(count)
+    modules.push(count)
     return modules
   }
 }
