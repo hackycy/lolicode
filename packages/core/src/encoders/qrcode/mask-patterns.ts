@@ -98,14 +98,14 @@ export function calculatePenalty(matrix: DotValue[][]): number {
     }
   }
 
-  // 规则 3：查找器样图案 (1:1:3:1:1) 或其反转
-  const pattern1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0]
-  const pattern2 = [0, 0, 0, 1, 0, 1, 1, 1, 0, 1]
+  // 规则 3：查找器样图案 (10111010000 / 00001011101)
+  const pattern1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0]
+  const pattern2 = [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1]
   for (let row = 0; row < size; row++) {
-    for (let col = 0; col <= size - 10; col++) {
+    for (let col = 0; col <= size - 11; col++) {
       let match1 = true
       let match2 = true
-      for (let k = 0; k < 10; k++) {
+      for (let k = 0; k < 11; k++) {
         if (matrix[row][col + k] !== pattern1[k])
           match1 = false
         if (matrix[row][col + k] !== pattern2[k])
@@ -116,10 +116,10 @@ export function calculatePenalty(matrix: DotValue[][]): number {
     }
   }
   for (let col = 0; col < size; col++) {
-    for (let row = 0; row <= size - 10; row++) {
+    for (let row = 0; row <= size - 11; row++) {
       let match1 = true
       let match2 = true
-      for (let k = 0; k < 10; k++) {
+      for (let k = 0; k < 11; k++) {
         if (matrix[row + k][col] !== pattern1[k])
           match1 = false
         if (matrix[row + k][col] !== pattern2[k])

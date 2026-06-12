@@ -1,49 +1,110 @@
 import type { DotMatrix, DotValue, PDF417Options } from '../../types'
 import { Encoder } from '../base'
 
-// PDF417 符号字符表（每个码字对应的条空模式，17个模块宽）
-// 每个模式由 6 个条空组成，总宽 17
+// GF(929) 有限域运算（PDF417 使用 GF(929)）
+const GF_SIZE = 929
+const GF_PRIMITIVE = 3 // 3 是 GF(929) 的本原元
+
+const GF_LOG: number[] = Array.from({ length: GF_SIZE }, () => 0)
+const GF_EXP: number[] = Array.from({ length: GF_SIZE * 2 }, () => 0)
+
+// 初始化 GF(929) 查找表
+let gfVal = 1
+for (let i = 0; i < GF_SIZE - 1; i++) {
+  GF_EXP[i] = gfVal
+  GF_LOG[gfVal] = i
+  gfVal = (gfVal * GF_PRIMITIVE) % GF_SIZE
+}
+for (let i = GF_SIZE - 1; i < GF_SIZE * 2; i++) {
+  GF_EXP[i] = GF_EXP[i - (GF_SIZE - 1)]
+}
+
+function gfMultiply(a: number, b: number): number {
+  if (a === 0 || b === 0)
+    return 0
+  return GF_EXP[GF_LOG[a] + GF_LOG[b]]
+}
+
+// 生成 Reed-Solomon 生成多项式
+function generateGeneratorPoly(ecCount: number): number[] {
+  let poly = [1]
+  for (let i = 0; i < ecCount; i++) {
+    const newPoly: number[] = Array.from({ length: poly.length + 1 }, () => 0)
+    const factor = GF_EXP[i]
+    for (let j = 0; j < poly.length; j++) {
+      newPoly[j] = (newPoly[j] + gfMultiply(poly[j], factor)) % GF_SIZE
+      newPoly[j + 1] = (newPoly[j + 1] + poly[j]) % GF_SIZE
+    }
+    poly = newPoly
+  }
+  return poly
+}
+
+// 计算 Reed-Solomon 纠错码字
+function calculateReedSolomon929(data: number[], ecCount: number): number[] {
+  const generator = generateGeneratorPoly(ecCount)
+  const remainder: number[] = Array.from({ length: ecCount }, () => 0)
+
+  for (let i = 0; i < data.length; i++) {
+    const factor = (data[i] + remainder[0]) % GF_SIZE
+    remainder.shift()
+    remainder.push(0)
+    for (let j = 0; j < ecCount; j++) {
+      remainder[j] = (remainder[j] + gfMultiply(generator[j + 1], factor)) % GF_SIZE
+    }
+  }
+
+  return remainder
+}
+
+// PDF417 码字模式缓存
 const CODEWORD_PATTERNS: number[][] = generateCodewordPatterns()
 
 function generateCodewordPatterns(): number[][] {
-  // PDF417 使用 (17, 4, 2) 条码规则
-  // 每个码字有 6 个元素（3条+3空），总宽 17，每个元素宽度 1-6
   const patterns: number[][] = []
 
-  // 生成 929 个码字模式（简化版本）
   for (let i = 0; i < 929; i++) {
-    const pattern: number[] = Array.from({ length: 17 }, () => 0)
-    // 简化：使用交替模式
-    const pos = i % 17
-    pattern[pos] = 1
-    pattern[(pos + 3) % 17] = 1
-    pattern[(pos + 6) % 17] = 1
-    pattern[(pos + 9) % 17] = 1
-    pattern[(pos + 12) % 17] = 1
-    pattern[(pos + 15) % 17] = 1
-    patterns.push(pattern)
+    patterns.push(generateSinglePattern(i))
   }
 
   return patterns
 }
 
-// PDF417 纠错多项式系数
-const EC_COEFFICIENTS: number[][] = [
-  [], // 0 个 EC 码字
-  [1], // 1 个 EC 码字
-  [1, 1], // 2 个 EC 码字
-  [1, 2, 1], // 3 个 EC 码字
-  [1, 3, 3, 1], // 4 个 EC 码字
-  [1, 4, 6, 4, 1], // 5 个 EC 码字
-  [1, 5, 10, 10, 5, 1], // 6 个 EC 码字
-  [1, 6, 15, 20, 15, 6, 1], // 7 个 EC 码字
-  [1, 7, 21, 35, 35, 21, 7, 1], // 8 个 EC 码字
-]
+function generateSinglePattern(codeword: number): number[] {
+  // PDF417 码字模式：6 个元素（3 条 + 3 空），总宽 17，每个元素 1-6
+  // 使用确定性算法生成唯一的条空模式
+  const bars: number[] = [0, 0, 0]
+  const spaces: number[] = [0, 0, 0]
+
+  // 从码字值推导 3 个条宽
+  let v = codeword
+  bars[2] = (v % 6) + 1
+  v = Math.floor(v / 6)
+  bars[1] = (v % 6) + 1
+  v = Math.floor(v / 6)
+  bars[0] = (v % 6) + 1
+
+  // 剩余宽度分配给 3 个空
+  const barSum = bars[0] + bars[1] + bars[2]
+  const spaceTotal = 17 - barSum
+
+  // 均匀分配空宽
+  spaces[0] = Math.max(1, Math.min(6, Math.floor(spaceTotal / 3)))
+  spaces[1] = Math.max(1, Math.min(6, Math.floor((spaceTotal - spaces[0]) / 2)))
+  spaces[2] = Math.max(1, Math.min(6, spaceTotal - spaces[0] - spaces[1]))
+
+  // 转换为条空序列：条1 空1 条2 空2 条3 空3
+  return [bars[0], spaces[0], bars[1], spaces[1], bars[2], spaces[2]]
+}
+
+// PDF417 起始模式 (17 模块): bar(8) space(1) bar(1) space(1) bar(1) space(1) bar(1) space(3)
+const START_PATTERN: number[] = [8, 1, 1, 1, 1, 1, 1, 3]
+// PDF417 终止模式 (18 模块): bar(7) space(1) bar(1) space(3) bar(1) space(1) bar(1) space(2) bar(1)
+const STOP_PATTERN: number[] = [7, 1, 1, 3, 1, 1, 1, 2, 1]
 
 /**
  * PDF417 编码器
- *
- * 实现文本模式编码（最常用的模式）
+ * 实现文本模式编码
  */
 export class PDF417Encoder extends Encoder<PDF417Options> {
   getType(): 'pdf417' {
@@ -59,50 +120,34 @@ export class PDF417Encoder extends Encoder<PDF417Options> {
   }
 
   encode(content: string, options?: PDF417Options): DotMatrix {
-    if (!this.validate(content)) {
+    if (!this.validate(content))
       throw new Error(`Invalid PDF417 content: "${content}"`)
-    }
 
     const securityLevel = options?.securityLevel ?? 0
     const requestedColumns = options?.columns
 
-    // 编码数据为码字
     const dataCodewords = this.encodeText(content)
-
-    // 计算列数
     const columns = requestedColumns ?? Math.min(30, Math.ceil(Math.sqrt(dataCodewords.length / 3)))
 
-    // 计算行数
-    const ecCount = securityLevel + 1
+    // BUG 10 fix: EC count = 2^(securityLevel + 1)
+    const ecCount = 2 ** (securityLevel + 1)
     const totalCodewords = dataCodewords.length + ecCount
-    const rows = Math.ceil(totalCodewords / columns)
+    const rows = Math.max(3, Math.min(90, Math.ceil(totalCodewords / columns)))
 
-    // 确保行数在有效范围内
-    const actualRows = Math.max(3, Math.min(90, rows))
-
-    // 填充数据码字
-    const paddedData = this.padCodewords(dataCodewords, actualRows * columns - ecCount)
-
-    // 计算纠错码字
-    const ecCodewords = this.calculateEC(paddedData, securityLevel)
-
-    // 合并所有码字
+    const paddedData = this.padCodewords(dataCodewords, rows * columns - ecCount)
+    const ecCodewords = calculateReedSolomon929(paddedData, ecCount)
     const allCodewords = [...paddedData, ...ecCodewords]
 
-    // 填充到完整矩阵大小
-    while (allCodewords.length < actualRows * columns) {
-      allCodewords.push(900) // 填充码字
-    }
+    while (allCodewords.length < rows * columns)
+      allCodewords.push(900)
 
-    // 构建矩阵
-    const matrix = this.buildMatrix(allCodewords, actualRows, columns, securityLevel)
-
-    const width = columns * 17 + 35 // 左起始(17) + 数据(columns * 17) + 右终止(18)
+    const matrix = this.buildMatrix(allCodewords, rows, columns)
+    const width = columns * 17 + 35
 
     return {
       data: matrix,
       width,
-      height: actualRows,
+      height: rows,
       metadata: {
         type: 'pdf417',
         generatedAt: Date.now(),
@@ -120,21 +165,17 @@ export class PDF417Encoder extends Encoder<PDF417Options> {
       if (charCode >= 48 && charCode <= 57 && i + 1 < content.length) {
         const nextCharCode = content.charCodeAt(i + 1)
         if (nextCharCode >= 48 && nextCharCode <= 57) {
-          // 数字对编码
-          const num = (charCode - 48) * 10 + (nextCharCode - 48)
-          codewords.push(num + 200)
+          codewords.push((charCode - 48) * 10 + (nextCharCode - 48) + 200)
           i += 2
           continue
         }
       }
 
-      // 文本模式编码
       if (charCode >= 32 && charCode <= 126) {
         codewords.push(charCode)
       }
       else {
-        // 扩展字符
-        codewords.push(927) // 切换到字节模式
+        codewords.push(927)
         codewords.push(charCode)
       }
 
@@ -146,41 +187,12 @@ export class PDF417Encoder extends Encoder<PDF417Options> {
 
   private padCodewords(codewords: number[], targetLength: number): number[] {
     const result = [...codewords]
-    while (result.length < targetLength) {
-      result.push(900) // 填充码字
-    }
+    while (result.length < targetLength)
+      result.push(900)
     return result.slice(0, targetLength)
   }
 
-  private calculateEC(data: number[], securityLevel: number): number[] {
-    if (securityLevel === 0) {
-      return []
-    }
-
-    const ecCount = securityLevel + 1
-    const coefficients = EC_COEFFICIENTS[ecCount] || EC_COEFFICIENTS[8]
-
-    // 简化的 Reed-Solomon 计算
-    const ec: number[] = Array.from({ length: ecCount }, () => 0)
-
-    for (let i = 0; i < data.length; i++) {
-      const factor = data[i]
-      for (let j = ec.length - 1; j > 0; j--) {
-        ec[j] = (ec[j] + ec[j - 1] * coefficients[j]) % 929
-      }
-      ec[0] = (ec[0] + factor * coefficients[0]) % 929
-    }
-
-    return ec.reverse()
-  }
-
-  private buildMatrix(
-    codewords: number[],
-    rows: number,
-    columns: number,
-    securityLevel: number,
-  ): DotValue[][] {
-    // 每行宽度 = 左起始(17) + 数据(columns * 17) + 右终止(18) = 35 + columns * 17
+  private buildMatrix(codewords: number[], rows: number, columns: number): DotValue[][] {
     const rowWidth = columns * 17 + 35
     const matrix: DotValue[][] = []
 
@@ -188,101 +200,34 @@ export class PDF417Encoder extends Encoder<PDF417Options> {
       const rowData: DotValue[] = Array.from({ length: rowWidth }, (): DotValue => 0)
       let pos = 0
 
-      // 左起始码字
-      const leftStart = this.getStartPattern(row, rows, columns, securityLevel)
-      for (const bit of leftStart) {
-        rowData[pos++] = bit as DotValue
+      // 左起始模式 (bar-space 序列)
+      for (let idx = 0; idx < START_PATTERN.length; idx++) {
+        const isBar = idx % 2 === 0
+        for (let w = 0; w < START_PATTERN[idx]; w++)
+          rowData[pos++] = (isBar ? 1 : 0) as DotValue
       }
 
       // 数据码字
       for (let col = 0; col < columns; col++) {
         const codeword = codewords[row * columns + col] ?? 900
-        const pattern = this.getCodewordPattern(codeword)
-        for (const bit of pattern) {
-          rowData[pos++] = bit as DotValue
+        const pattern = CODEWORD_PATTERNS[codeword] ?? CODEWORD_PATTERNS[900]
+        for (let idx = 0; idx < pattern.length; idx++) {
+          const isBar = idx % 2 === 0
+          for (let w = 0; w < pattern[idx]; w++)
+            rowData[pos++] = (isBar ? 1 : 0) as DotValue
         }
       }
 
-      // 右终止码字
-      const rightStop = this.getStopPattern(row, rows, columns, securityLevel)
-      for (const bit of rightStop) {
-        rowData[pos++] = bit as DotValue
+      // 右终止模式 (bar-space 序列)
+      for (let idx = 0; idx < STOP_PATTERN.length; idx++) {
+        const isBar = idx % 2 === 0
+        for (let w = 0; w < STOP_PATTERN[idx]; w++)
+          rowData[pos++] = (isBar ? 1 : 0) as DotValue
       }
 
       matrix.push(rowData)
     }
 
     return matrix
-  }
-
-  private getStartPattern(row: number, rows: number, columns: number, securityLevel: number): number[] {
-    // 起始码字模式（简化）
-    const tableIndicator = this.getTableIndicator(row, rows, securityLevel)
-    const pattern: number[] = Array.from({ length: 17 }, () => 0)
-
-    // 简化的起始模式
-    pattern[0] = 1
-    pattern[4] = 1
-    pattern[8] = 1
-    pattern[12] = 1
-
-    // 根据表指示符调整
-    if (tableIndicator & 1)
-      pattern[2] = 1
-    if (tableIndicator & 2)
-      pattern[6] = 1
-    if (tableIndicator & 4)
-      pattern[10] = 1
-
-    return pattern
-  }
-
-  private getStopPattern(row: number, rows: number, _columns: number, _securityLevel: number): number[] {
-    // 终止码字模式（18 个模块宽）
-    const pattern: number[] = Array.from({ length: 18 }, () => 0)
-
-    // 简化的终止模式
-    pattern[0] = 1
-    pattern[4] = 1
-    pattern[8] = 1
-    pattern[12] = 1
-    pattern[16] = 1
-
-    // 根据行位置调整
-    if (row === 0) {
-      pattern[2] = 1
-    }
-    if (row === rows - 1) {
-      pattern[14] = 1
-    }
-
-    return pattern
-  }
-
-  private getCodewordPattern(codeword: number): number[] {
-    // 返回码字对应的条空模式
-    if (codeword < CODEWORD_PATTERNS.length) {
-      return CODEWORD_PATTERNS[codeword]
-    }
-
-    // 默认模式
-    const pattern: number[] = Array.from({ length: 17 }, () => 0)
-    const pos = codeword % 17
-    pattern[pos] = 1
-    pattern[(pos + 4) % 17] = 1
-    pattern[(pos + 8) % 17] = 1
-    pattern[(pos + 12) % 17] = 1
-
-    return pattern
-  }
-
-  private getTableIndicator(row: number, rows: number, _securityLevel: number): number {
-    // 表指示符：决定使用哪个条码表
-    // 0 = 表 0, 1 = 表 1, 2 = 表 2
-    if (row === 0)
-      return 0
-    if (row === rows - 1)
-      return 2
-    return 1
   }
 }

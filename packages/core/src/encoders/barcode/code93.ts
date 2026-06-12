@@ -100,7 +100,7 @@ export class Code93Encoder extends BarcodeEncoder {
     for (const char of fullContent) {
       const pattern = this.getCharPattern(char)
       for (const bit of pattern) {
-        modules.push(bit === '1' ? 1 : 1)
+        modules.push(bit === '1' ? 1 : 0)
       }
     }
 
@@ -125,7 +125,7 @@ export class Code93Encoder extends BarcodeEncoder {
 
   private calculateCheckC(content: string): string {
     let sum = 0
-    const weights = [20, 15, 10, 5, 4, 3, 2, 1]
+    const weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
     for (let i = 0; i < content.length; i++) {
       const charIndex = CODE93_CHARS.indexOf(content[i])
@@ -138,7 +138,7 @@ export class Code93Encoder extends BarcodeEncoder {
 
   private calculateCheckK(content: string): string {
     let sum = 0
-    const weights = [15, 10, 5, 4, 3, 2, 1]
+    const weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
     for (let i = 0; i < content.length; i++) {
       const charIndex = CODE93_CHARS.indexOf(content[i])

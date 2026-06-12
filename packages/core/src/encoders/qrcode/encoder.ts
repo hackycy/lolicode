@@ -189,6 +189,14 @@ const EC_LEVEL_MAP: Record<ErrorCorrectionLevel, number> = {
   H: 3,
 }
 
+// QR 标准格式信息中的 EC 等级编码
+const EC_FORMAT_MAP: Record<ErrorCorrectionLevel, number> = {
+  L: 1,
+  M: 0,
+  Q: 3,
+  H: 2,
+}
+
 /**
  * QR Code 编码器
  */
@@ -721,7 +729,7 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     errorLevel: ErrorCorrectionLevel,
     mask: number,
   ): void {
-    const ecLevel = EC_LEVEL_MAP[errorLevel]
+    const ecLevel = EC_FORMAT_MAP[errorLevel]
     const formatInfo = this.calculateFormatInfo(ecLevel, mask)
 
     const size = matrix.length

@@ -66,14 +66,7 @@ export class CodabarEncoder extends BarcodeEncoder {
 
       // 将条空模式转换为模块序列
       for (let j = 0; j < pattern.length; j++) {
-        const width = pattern[j] === '1' ? 1 : 0
-        if (width > 0) {
-          modules.push(width)
-        }
-        else {
-          // 空格
-          modules.push(1)
-        }
+        modules.push(pattern[j] === '1' ? 1 : 0)
       }
 
       // 字符间窄空间隔

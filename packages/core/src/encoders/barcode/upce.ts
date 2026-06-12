@@ -70,7 +70,7 @@ export class UPCEncoder extends BarcodeEncoder {
     // 6 位数据
     for (let i = 0; i < 6; i++) {
       const digit = dataDigits[i]
-      if (encodingPattern[i] === 'L') {
+      if (encodingPattern[i] === 'E') {
         bits.push(L_ENCODINGS[digit])
       }
       else {

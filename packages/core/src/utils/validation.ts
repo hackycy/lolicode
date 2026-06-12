@@ -58,9 +58,13 @@ export function isValidITF(content: string): boolean {
  * 计算 EAN/UPC 校验位
  */
 export function calculateEANCheckDigit(digits: number[]): number {
+  // EAN-13 (12 digits): weights 1,3,1,3,...
+  // EAN-8 (7 digits) / UPC-A (11 digits): weights 3,1,3,1,...
+  const evenWeight = digits.length % 2 === 0 ? 1 : 3
+  const oddWeight = digits.length % 2 === 0 ? 3 : 1
   let sum = 0
   for (let i = 0; i < digits.length; i++) {
-    sum += digits[i] * (i % 2 === 0 ? 1 : 3)
+    sum += digits[i] * (i % 2 === 0 ? evenWeight : oddWeight)
   }
   const remainder = sum % 10
   return remainder === 0 ? 0 : 10 - remainder

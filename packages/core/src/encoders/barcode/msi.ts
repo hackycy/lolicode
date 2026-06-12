@@ -58,7 +58,7 @@ export class MSIEncoder extends BarcodeEncoder {
 
       // 将条空模式转换为模块序列
       for (let j = 0; j < pattern.length; j++) {
-        modules.push(pattern[j] === '1' ? 1 : 1)
+        modules.push(pattern[j] === '1' ? 1 : 0)
       }
     }
 
