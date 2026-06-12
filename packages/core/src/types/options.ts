@@ -1,4 +1,4 @@
-import type { ErrorCorrectionLevel } from './matrix'
+import type { CodeType, ErrorCorrectionLevel } from './matrix'
 
 /**
  * 基础编码选项
@@ -87,3 +87,40 @@ export interface ITFOptions extends BarcodeOptions {
   /** 宽窄比，默认 2.5 */
   wideToNarrowRatio?: number
 }
+
+/**
+ * 可直接编码的码制类型
+ */
+export type EncodableCodeType = Exclude<CodeType, 'qrcode-micro'>
+
+/**
+ * 各码制对应的编码选项
+ */
+export interface CodeEncodeOptionsMap {
+  qrcode: QRCodeOptions
+  datamatrix: DataMatrixOptions
+  pdf417: PDF417Options
+  aztec: BaseEncodeOptions
+  code128: Code128Options
+  code39: BarcodeOptions
+  code93: BarcodeOptions
+  codabar: BarcodeOptions
+  gs1_128: BarcodeOptions
+  msi: BarcodeOptions
+  ean13: EANOptions
+  ean8: EANOptions
+  upca: EANOptions
+  upce: EANOptions
+  itf: ITFOptions
+}
+
+/**
+ * 声明式编码请求
+ */
+export type CodeEncodeRequest<TType extends EncodableCodeType = EncodableCodeType> = {
+  [Type in TType]: {
+    type: Type
+    content: string
+    options?: CodeEncodeOptionsMap[Type]
+  }
+}[TType]

@@ -1,14 +1,14 @@
-import type { DotMatrix, Renderer } from '@lolicode/core'
+import type { Renderer } from '@lolicode/core'
 
-import type { TerminalRenderOptions } from './terminal-renderer'
+import type { TerminalInput, TerminalRenderOptions } from './terminal-renderer'
 import { renderTerminal } from './terminal-renderer'
 
 export { renderTerminal }
-export type { TerminalRenderOptions }
+export type { TerminalCodeRenderOptions, TerminalInput, TerminalRenderOptions } from './terminal-renderer'
 
 export class TerminalRenderer implements Renderer<string, TerminalRenderOptions> {
   readonly name = 'terminal'
-  render(matrix: DotMatrix, options?: TerminalRenderOptions): string {
-    return renderTerminal(matrix, options)
+  render(input: TerminalInput, options?: TerminalRenderOptions): string {
+    return renderTerminal(input, options)
   }
 }

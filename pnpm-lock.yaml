@@ -133,9 +133,6 @@ importers:
 
   playground:
     dependencies:
-      '@lolicode/core':
-        specifier: workspace:^
-        version: link:../packages/core
       '@lolicode/renderer-terminal':
         specifier: workspace:^
         version: link:../packages/renderer-terminal

@@ -1,20 +1,40 @@
-import type { DotMatrix as CoreDotMatrix, TerminalRenderOptions } from '@lolicode/core'
+import type {
+  CodeEncodeOptionsMap,
+  CodeEncodeRequest,
+  DotMatrix as CoreDotMatrix,
+  EncodableCodeType,
+  TerminalRenderOptions,
+} from '@lolicode/core'
+import { encode } from '@lolicode/core'
 
 export type { TerminalRenderOptions } from '@lolicode/core'
 
 type DotValue = 0 | 1
 type DotMatrixData = DotValue[][]
-type TerminalInput = CoreDotMatrix | DotMatrixData
+export type TerminalInput = CoreDotMatrix | DotMatrixData | CodeEncodeRequest
 
-function isCoreDotMatrix(input: TerminalInput): input is CoreDotMatrix {
-  return !Array.isArray(input)
+export type TerminalCodeRenderOptions<TType extends EncodableCodeType = EncodableCodeType> = TerminalRenderOptions & {
+  type: TType
+  encode?: CodeEncodeOptionsMap[TType]
 }
 
-function getMatrixData(input: TerminalInput): DotMatrixData {
+function isCoreDotMatrix(input: TerminalInput): input is CoreDotMatrix {
+  return !Array.isArray(input) && 'data' in input && 'metadata' in input
+}
+
+function isCodeEncodeRequest(input: TerminalInput): input is CodeEncodeRequest {
+  return !Array.isArray(input) && 'type' in input && 'content' in input
+}
+
+function resolveInput(input: TerminalInput): CoreDotMatrix | DotMatrixData {
+  return isCodeEncodeRequest(input) ? encode(input) : input
+}
+
+function getMatrixData(input: CoreDotMatrix | DotMatrixData): DotMatrixData {
   return isCoreDotMatrix(input) ? input.data : input
 }
 
-function isBarcodeMatrix(input: TerminalInput): boolean {
+function isBarcodeMatrix(input: CoreDotMatrix | DotMatrixData): boolean {
   return isCoreDotMatrix(input) && input.metadata.family === 'linear'
 }
 
@@ -165,16 +185,33 @@ function renderBars(matrix: DotMatrixData, invert: boolean, height: number, maxW
   return Array.from({ length: height }, () => line).join('\n')
 }
 
-export function renderTerminal(input: TerminalInput, options?: TerminalRenderOptions): string {
-  const isBarcode = isBarcodeMatrix(input)
-  const intent = options?.intent ?? 'preview'
-  const mode = options?.mode ?? (isBarcode ? 'bars' : 'utf8')
-  const margin = options?.margin ?? 0
-  const invert = options?.invert ?? false
-  const barHeight = options?.barHeight ?? (isBarcode && intent === 'preview' ? 4 : 6)
-  const maxWidth = options?.viewport?.maxWidth ?? options?.maxWidth ?? (isBarcode && intent === 'preview' ? 60 : undefined)
+export function renderTerminal<TType extends EncodableCodeType>(content: string, options: TerminalCodeRenderOptions<TType>): string
+export function renderTerminal(input: TerminalInput, options?: TerminalRenderOptions): string
+export function renderTerminal<TType extends EncodableCodeType>(
+  input: TerminalInput | string,
+  options?: TerminalRenderOptions | TerminalCodeRenderOptions<TType>,
+): string {
+  if (typeof input === 'string' && (options === undefined || !('type' in options))) {
+    throw new Error('Terminal code rendering requires a code type')
+  }
 
-  const padded = addMargin(getMatrixData(input), margin)
+  const resolved = typeof input === 'string'
+    ? encode({
+        type: (options as TerminalCodeRenderOptions<TType>).type,
+        content: input,
+        options: (options as TerminalCodeRenderOptions<TType>).encode,
+      } as CodeEncodeRequest)
+    : resolveInput(input)
+  const renderOptions = options as TerminalRenderOptions | undefined
+  const isBarcode = isBarcodeMatrix(resolved)
+  const intent = renderOptions?.intent ?? 'preview'
+  const mode = renderOptions?.mode ?? (isBarcode ? 'bars' : 'utf8')
+  const margin = renderOptions?.margin ?? 0
+  const invert = renderOptions?.invert ?? false
+  const barHeight = renderOptions?.barHeight ?? (isBarcode && intent === 'preview' ? 4 : 6)
+  const maxWidth = renderOptions?.viewport?.maxWidth ?? renderOptions?.maxWidth ?? (isBarcode && intent === 'preview' ? 60 : undefined)
+
+  const padded = addMargin(getMatrixData(resolved), margin)
 
   switch (mode) {
     case 'utf8':

@@ -112,6 +112,24 @@ describe('renderTerminal', () => {
       expect(result).not.toContain('▄')
     })
 
+    it('encodes and renders a declarative code request', () => {
+      const result = renderTerminal({ type: 'code128', content: 'Hello' })
+      const lines = result.split('\n')
+
+      expect(lines).toHaveLength(4)
+      expect(lines.every(line => line.length <= 60)).toBe(true)
+      expect(result).toContain('█')
+    })
+
+    it('encodes and renders content with terminal options', () => {
+      const result = renderTerminal('Hello', { type: 'code128', barHeight: 2 })
+
+      expect(result.split('\n')).toHaveLength(2)
+      expect(result).toContain('█')
+      expect(result).not.toContain('▀')
+      expect(result).not.toContain('▄')
+    })
+
     it('fits projected bars to a maximum terminal width', () => {
       const result = renderTerminal(code128('Hello'), { barHeight: 2, maxWidth: 40 })
       const lines = result.split('\n')

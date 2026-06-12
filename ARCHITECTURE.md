@@ -25,6 +25,10 @@
 | `@lolicode/renderer-svg`      | SVG           | 矢量图渲染         |
 | `@lolicode/renderer-terminal` | ANSI Escape   | 终端 ASCII 渲染   |
 
+### 包职责边界
+
+`@lolicode/core` 是编码引擎层，负责把内容转换为带语义元数据的 `DotMatrix`。渲染器包是用户场景入口，负责把“内容 + 码制 + 渲染目标”编排成最终输出；例如 terminal 用户应能只引入 `@lolicode/renderer-terminal`，用 `renderTerminal('Hello', { type: 'code128' })` 完成编码和渲染。只有需要复用点阵、实现自定义渲染器或直接操作矩阵时，才需要直接使用 `@lolicode/core`。
+
 ---
 
 ## 2. 项目文件结构 (Project Structure)
@@ -289,6 +293,43 @@ export interface ITFOptions extends BarcodeOptions {
   /** 宽窄比，默认 2.5 */
   wideToNarrowRatio?: number
 }
+
+/**
+ * 可直接编码的码制类型
+ */
+export type EncodableCodeType = Exclude<CodeType, 'qrcode-micro'>
+
+/**
+ * 各码制对应的编码选项
+ */
+export interface CodeEncodeOptionsMap {
+  qrcode: QRCodeOptions
+  datamatrix: DataMatrixOptions
+  pdf417: PDF417Options
+  aztec: BaseEncodeOptions
+  code128: Code128Options
+  code39: BarcodeOptions
+  code93: BarcodeOptions
+  codabar: BarcodeOptions
+  gs1_128: BarcodeOptions
+  msi: BarcodeOptions
+  ean13: EANOptions
+  ean8: EANOptions
+  upca: EANOptions
+  upce: EANOptions
+  itf: ITFOptions
+}
+
+/**
+ * 声明式编码请求
+ */
+export type CodeEncodeRequest<TType extends EncodableCodeType = EncodableCodeType> = {
+  [Type in TType]: {
+    type: Type
+    content: string
+    options?: CodeEncodeOptionsMap[Type]
+  }
+}[TType]
 ```
 
 ### 3.3 一维码编码流程
@@ -443,6 +484,24 @@ export interface TerminalRenderOptions extends BaseRenderOptions {
 
 一维条码的精确宽度可能超过常见终端宽度，终端自动换行会破坏视觉结构。`intent` 是跨渲染器的高层策略：`preview` 允许终端 renderer 根据视口约束压缩为可读预览，默认把一维条码限制到 60 列和 4 行；`scan` 保留矩阵精确几何，不自动压缩。SVG、Canvas、PNG 等像素介质也应复用 `intent` 和 `viewport`，但默认优先保留精确几何。
 
+面向终端场景的入口接受三类输入：
+
+```typescript
+type TerminalInput = DotMatrix | DotValue[][] | CodeEncodeRequest
+
+type TerminalCodeRenderOptions<TType extends EncodableCodeType = EncodableCodeType>
+  = TerminalRenderOptions & {
+    type: TType
+    encode?: CodeEncodeOptionsMap[TType]
+  }
+
+renderTerminal('Hello', { type: 'code128' })
+renderTerminal({ type: 'qrcode', content: 'LOLI', options: { margin: 1 } })
+renderTerminal(prebuiltMatrix)
+```
+
+字符串简写和声明式请求由 renderer 包内部调用 core 编码器解析，调用方不需要先构造 `DotMatrix`。已经预编码的 `DotMatrix` 仍然保留完整语义元数据，适合缓存、复用或跨渲染器输出；裸 `DotValue[][]` 只作为低层输入使用。
+
 ---
 
 ## 4. 主 API 设计
@@ -554,24 +613,47 @@ export function ean13(content: string, options?: EANOptions): DotMatrix {
 export function itf(content: string, options?: ITFOptions): DotMatrix {
   return new ITFEncoder().encode(content, options)
 }
+
+/**
+ * 根据声明式请求生成点阵
+ */
+export function encode(request: CodeEncodeRequest): DotMatrix {
+  // 根据 request.type 分发到对应编码器
+}
 ```
 
 ---
 
 ## 5. 使用示例
 
-### 5.1 基础使用
+### 5.1 终端使用
 
 ```typescript
-import { code128, qr } from '@lolicode/core'
+import { renderTerminal } from '@lolicode/renderer-terminal'
 
-// 生成 QR Code 点阵
-const qrMatrix = qr('https://example.com', {
-  errorLevel: 'H',
-  margin: 2,
+console.log(renderTerminal('https://example.com', {
+  type: 'qrcode',
+  encode: { errorLevel: 'H', margin: 2 },
+}))
+
+console.log(renderTerminal('123456789', {
+  type: 'code128',
+}))
+```
+
+### 5.2 点阵复用
+
+```typescript
+import { encode } from '@lolicode/core'
+import { renderTerminal } from '@lolicode/renderer-terminal'
+
+const matrix = encode({
+  type: 'qrcode',
+  content: 'https://example.com',
+  options: { errorLevel: 'H', margin: 2 },
 })
 
-console.log(qrMatrix)
+console.log(matrix)
 // {
 //   data: [[0,0,0,...], [0,1,1,...], ...],
 //   width: 25,
@@ -579,22 +661,16 @@ console.log(qrMatrix)
 //   metadata: { type: 'qrcode', family: 'matrix', version: 2, errorLevel: 'H', ... }
 // }
 
-// 生成 Code 128 条形码点阵
-const barcodeMatrix = code128('123456789', {
-  moduleWidth: 2,
-  height: 24,
-  quietZone: 10,
-  verticalMargin: 1,
-})
+console.log(renderTerminal(matrix))
 ```
 
-### 5.2 自定义渲染
+### 5.3 自定义渲染
 
 ```typescript
-import { qr } from '@lolicode/core'
+import { encode } from '@lolicode/core'
 import { CanvasRenderer } from '@lolicode/renderer-canvas'
 
-const matrix = qr('Hello World')
+const matrix = encode({ type: 'qrcode', content: 'Hello World' })
 const renderer = new CanvasRenderer()
 
 // 渲染到 Canvas
@@ -607,7 +683,7 @@ renderer.render(matrix, {
 })
 ```
 
-### 5.3 自定义渲染器
+### 5.4 自定义渲染器
 
 ```typescript
 import type { DotMatrix, Renderer } from '@lolicode/core'

@@ -7,7 +7,6 @@
     "start": "tsx src/main.ts"
   },
   "dependencies": {
-    "@lolicode/core": "workspace:^",
     "@lolicode/renderer-terminal": "workspace:^"
   }
 }

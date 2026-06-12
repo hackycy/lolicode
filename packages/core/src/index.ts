@@ -2,6 +2,7 @@ import type {
   BarcodeOptions,
   BaseEncodeOptions,
   Code128Options,
+  CodeEncodeRequest,
   DataMatrixOptions,
   DotMatrix,
   EANOptions,
@@ -57,6 +58,8 @@ export type {
   BaseRenderOptions,
   CanvasRenderOptions,
   Code128Options,
+  CodeEncodeOptionsMap,
+  CodeEncodeRequest,
   CodeFamily,
   // 点阵类型
   CodeType,
@@ -66,6 +69,7 @@ export type {
   DotMatrixMetadata,
   DotValue,
   EANOptions,
+  EncodableCodeType,
   ErrorCorrectionLevel,
   ITFOptions,
   PDF417Options,
@@ -193,4 +197,44 @@ export function gs1_128(content: string, options?: BarcodeOptions): DotMatrix {
  */
 export function aztec(content: string, options?: BaseEncodeOptions): DotMatrix {
   return new AztecEncoder().encode(content, options)
+}
+
+/**
+ * 根据声明式请求生成点阵
+ */
+export function encode(request: CodeEncodeRequest): DotMatrix {
+  switch (request.type) {
+    case 'qrcode':
+      return qr(request.content, request.options)
+    case 'datamatrix':
+      return dataMatrix(request.content, request.options)
+    case 'pdf417':
+      return pdf417(request.content, request.options)
+    case 'aztec':
+      return aztec(request.content, request.options)
+    case 'code128':
+      return code128(request.content, request.options)
+    case 'code39':
+      return code39(request.content, request.options)
+    case 'code93':
+      return code93(request.content, request.options)
+    case 'codabar':
+      return codabar(request.content, request.options)
+    case 'gs1_128':
+      return gs1_128(request.content, request.options)
+    case 'msi':
+      return msi(request.content, request.options)
+    case 'ean13':
+      return ean13(request.content, request.options)
+    case 'ean8':
+      return ean8(request.content, request.options)
+    case 'upca':
+      return upca(request.content, request.options)
+    case 'upce':
+      return upce(request.content, request.options)
+    case 'itf':
+      return itf(request.content, request.options)
+    default:
+      throw new Error(`Unsupported code type: ${(request as { type: string }).type}`)
+  }
 }
