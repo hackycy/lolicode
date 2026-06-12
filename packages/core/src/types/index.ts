@@ -1,4 +1,5 @@
 export type {
+  BarcodeSymbol,
   CodeType,
   DotMatrix,
   DotMatrixMetadata,

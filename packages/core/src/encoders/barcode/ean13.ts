@@ -75,12 +75,7 @@ export class EAN13Encoder extends BarcodeEncoder {
     return isValidEAN13(content)
   }
 
-  getModuleCount(_content: string): number {
-    // 起始条(3) + 左侧6位(42) + 中间条(5) + 右侧6位(42) + 终止条(3) = 95
-    return 95
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const digits = this.prepareDigits(content)
     const firstDigit = digits[0]
     const leftDigits = digits.slice(1, 7)

@@ -48,11 +48,7 @@ export class UPCAEncoder extends BarcodeEncoder {
     return isValidUPCA(content)
   }
 
-  getModuleCount(_content: string): number {
-    return 95
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const digits = this.prepareDigits(content)
     const leftDigits = digits.slice(0, 6)
     const rightDigits = digits.slice(6, 12)

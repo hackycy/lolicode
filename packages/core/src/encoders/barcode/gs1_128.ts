@@ -148,17 +148,7 @@ export class GS1_128Encoder extends BarcodeEncoder {
     return true
   }
 
-  getModuleCount(content: string): number {
-    const digits = this.extractDigits(content)
-    // START + FNC1 + data + CHECKSUM + STOP
-    // 使用 Code C 模式（每2位数字1个符号）或 Code B 模式（每字符1个符号）
-    const dataCodes = this.encodeData(digits)
-    // start + FNC1 + dataCodes + checksum + stop = total symbols
-    const symbolCount = 2 + dataCodes.length + 2
-    return symbolCount * 11 + 2
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const digits = this.extractDigits(content)
     const dataCodes = this.encodeData(digits)
 

@@ -77,6 +77,43 @@ describe('qREncoder', () => {
       const b = encoder.encode('TEST', { version: 1, errorLevel: 'M', maskPattern: 0 })
       expect(a.data).toEqual(b.data)
     })
+
+    it('matches a standard QR matrix for fixed version, level, and mask', () => {
+      const result = encoder.encode('LOLI', { version: 1, errorLevel: 'M', maskPattern: 0, margin: 0 })
+      const expected = [
+        '111111100101001111111',
+        '100000101101001000001',
+        '101110100110001011101',
+        '101110100010001011101',
+        '101110101100101011101',
+        '100000100100101000001',
+        '111111101010101111111',
+        '000000000001100000000',
+        '101010100011000010010',
+        '110011000100001000000',
+        '100101100100100011000',
+        '010011010000001001110',
+        '110111100100101010110',
+        '000000001011010100001',
+        '111111100101011100001',
+        '100000100111110111011',
+        '101110101011011100101',
+        '101110100100001000110',
+        '101110101100100010001',
+        '100000100010001000111',
+        '111111101100101010101',
+      ]
+
+      expect(result.data.map(row => row.join(''))).toEqual(expected)
+    })
+
+    it('throws when requested version cannot contain the data', () => {
+      expect(() => encoder.encode('A'.repeat(40), { version: 1, errorLevel: 'H' })).toThrow('Data too long')
+    })
+
+    it('throws on invalid mask pattern', () => {
+      expect(() => encoder.encode('TEST', { maskPattern: 8 })).toThrow('Invalid QR mask pattern')
+    })
   })
 
   describe('qr() convenience function', () => {

@@ -94,48 +94,48 @@ const EC_CODEWORDS_PER_BLOCK: number[][] = [
   [30, 28, 28, 30], // V40
 ]
 
-// EC Block 数量（Group1 blocks, Group2 blocks）
-const EC_BLOCKS: number[][][] = [
-  [[1, 0], [1, 0], [1, 0], [1, 0]], // V1
-  [[1, 0], [1, 0], [1, 0], [1, 0]], // V2
-  [[1, 0], [1, 0], [1, 0], [1, 0]], // V3
-  [[1, 0], [1, 0], [2, 0], [2, 0]], // V4
-  [[1, 0], [1, 0], [2, 0], [2, 0]], // V5
-  [[2, 0], [2, 0], [4, 0], [4, 0]], // V6
-  [[2, 0], [2, 0], [4, 0], [4, 0]], // V7
-  [[2, 0], [2, 0], [2, 2], [4, 1]], // V8
-  [[2, 0], [2, 0], [3, 2], [4, 2]], // V9
-  [[2, 2], [2, 2], [4, 1], [4, 2]], // V10
-  [[2, 2], [3, 2], [1, 4], [4, 4]], // V11
-  [[2, 2], [3, 2], [6, 2], [3, 8]], // V12
-  [[2, 2], [3, 2], [8, 1], [4, 4]], // V13 - fixed
-  [[3, 2], [4, 1], [4, 5], [11, 5]], // V14 - fixed
-  [[3, 2], [1, 5], [5, 5], [5, 7]], // V15 - fixed
-  [[3, 2], [5, 1], [2, 7], [15, 2]], // V16
-  [[3, 2], [5, 1], [15, 2], [1, 15]], // V17
-  [[3, 2], [5, 1], [1, 15], [2, 1]], // V18
-  [[3, 2], [5, 1], [17, 1], [2, 1]], // V19
-  [[3, 2], [5, 1], [15, 2], [2, 1]], // V20
-  [[4, 2], [5, 1], [17, 2], [4, 4]], // V21
-  [[2, 4], [3, 5], [17, 2], [4, 4]], // V22
-  [[4, 4], [3, 3], [15, 5], [6, 7]], // V23
-  [[2, 4], [3, 3], [4, 14], [8, 13]], // V24
-  [[4, 1], [5, 5], [6, 14], [10, 3]], // V25
-  [[2, 5], [5, 5], [14, 5], [8, 14]], // V26
-  [[4, 5], [4, 5], [5, 10], [14, 1]], // V27
-  [[4, 5], [2, 7], [13, 3], [4, 18]], // V28
-  [[4, 5], [4, 5], [17, 1], [4, 18]], // V29
-  [[6, 3], [2, 13], [7, 14], [11, 4]], // V30
-  [[4, 3], [6, 4], [11, 16], [14, 6]], // V31
-  [[2, 7], [8, 4], [11, 10], [18, 6]], // V32
-  [[4, 5], [10, 2], [7, 22], [8, 14]], // V33
-  [[3, 10], [8, 4], [22, 13], [4, 32]], // V34
-  [[7, 3], [5, 5], [19, 4], [11, 16]], // V35
-  [[5, 10], [13, 1], [11, 6], [19, 29]], // V36
-  [[5, 7], [17, 1], [19, 6], [7, 49]], // V37
-  [[1, 13], [17, 4], [13, 14], [12, 23]], // V38
-  [[3, 10], [15, 5], [15, 14], [2, 45]], // V39
-  [[3, 10], [17, 5], [15, 14], [2, 46]], // V40
+// 纠错块数量，索引: [version-1][errorLevel]
+const EC_BLOCKS_COUNT: number[][] = [
+  [1, 1, 1, 1],
+  [1, 1, 1, 1],
+  [1, 1, 2, 2],
+  [1, 2, 2, 4],
+  [1, 2, 4, 4],
+  [2, 4, 4, 4],
+  [2, 4, 6, 5],
+  [2, 4, 6, 6],
+  [2, 5, 8, 8],
+  [4, 5, 8, 8],
+  [4, 5, 8, 11],
+  [4, 8, 10, 11],
+  [4, 9, 12, 16],
+  [4, 9, 16, 16],
+  [6, 10, 12, 18],
+  [6, 10, 17, 16],
+  [6, 11, 16, 19],
+  [6, 13, 18, 21],
+  [7, 14, 21, 25],
+  [8, 16, 20, 25],
+  [8, 17, 23, 25],
+  [9, 17, 23, 34],
+  [9, 18, 25, 30],
+  [10, 20, 27, 32],
+  [12, 21, 29, 35],
+  [12, 23, 34, 37],
+  [12, 25, 34, 40],
+  [13, 26, 35, 42],
+  [14, 28, 38, 45],
+  [15, 29, 40, 48],
+  [16, 31, 43, 51],
+  [17, 33, 45, 54],
+  [18, 35, 48, 57],
+  [19, 37, 51, 60],
+  [19, 38, 53, 63],
+  [20, 40, 56, 66],
+  [21, 43, 59, 70],
+  [22, 45, 62, 74],
+  [24, 47, 65, 77],
+  [25, 49, 68, 81],
 ]
 
 // 对齐图案位置
@@ -222,6 +222,9 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     const ecLevel = EC_LEVEL_MAP[errorLevel]
     const requestedVersion = options?.version
     const requestedMask = options?.maskPattern
+    if (requestedMask !== undefined && (requestedMask < 0 || requestedMask > 7)) {
+      throw new Error(`Invalid QR mask pattern: ${requestedMask}`)
+    }
 
     // 选择编码模式
     const mode = options?.mode ?? this.detectMode(content)
@@ -230,7 +233,7 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     const dataBits = this.encodeData(content, mode)
 
     // 选择版本
-    const version = requestedVersion ?? this.selectVersion(dataBits.length, ecLevel)
+    const version = requestedVersion ?? this.selectVersion(dataBits.length, ecLevel, mode)
     if (version < 1 || version > 40) {
       throw new Error(`Invalid QR version: ${version}`)
     }
@@ -254,8 +257,12 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     // 数据
     bitStream.push(...dataBits)
 
-    // 终止符 (最多 4 个 0)
     const totalBits = totalDataCodewords * 8
+    if (bitStream.length > totalBits) {
+      throw new Error(`Data too long for QR Code version ${version} with error level ${errorLevel}`)
+    }
+
+    // 终止符 (最多 4 个 0)
     const terminatorLength = Math.min(4, totalBits - bitStream.length)
     for (let i = 0; i < terminatorLength; i++) {
       bitStream.push(0)
@@ -440,10 +447,9 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     return bits
   }
 
-  private selectVersion(dataBits: number, ecLevel: number): number {
-    // 4 (mode) + charCountBits + dataBits
+  private selectVersion(dataBits: number, ecLevel: number, mode: string): number {
     for (let v = 1; v <= 40; v++) {
-      const charCountBits = v <= 9 ? 8 : 16
+      const charCountBits = this.getCharCountBits(v, mode)
       const totalBits = 4 + charCountBits + dataBits
       const capacity = DATA_CODEWORDS[v - 1][ecLevel] * 8
       if (totalBits <= capacity)
@@ -457,32 +463,17 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     version: number,
     ecLevel: number,
   ): number[][] {
-    const ecBlockInfo = EC_BLOCKS[version - 1][ecLevel]
+    const blockDataLengths = this.getBlockDataLengths(version, ecLevel)
     const ecPerBlock = EC_CODEWORDS_PER_BLOCK[version - 1][ecLevel]
-    const totalBlocks = ecBlockInfo[0] + ecBlockInfo[1]
-
-    // 计算每个块的数据码字数
-    const totalDataCodewords = DATA_CODEWORDS[version - 1][ecLevel]
-    const blockSize1 = Math.floor(totalDataCodewords / totalBlocks)
-    const blockSize2 = blockSize1 + 1
-    const blocks1 = ecBlockInfo[0]
-    const blocks2 = ecBlockInfo[1]
 
     const result: number[][] = []
     let offset = 0
 
-    for (let i = 0; i < blocks1; i++) {
-      const blockData = dataCodewords.slice(offset, offset + blockSize1)
+    for (const dataLength of blockDataLengths) {
+      const blockData = dataCodewords.slice(offset, offset + dataLength)
       const ecData = calculateReedSolomon(blockData, ecPerBlock)
       result.push([...blockData, ...ecData])
-      offset += blockSize1
-    }
-
-    for (let i = 0; i < blocks2; i++) {
-      const blockData = dataCodewords.slice(offset, offset + blockSize2)
-      const ecData = calculateReedSolomon(blockData, ecPerBlock)
-      result.push([...blockData, ...ecData])
-      offset += blockSize2
+      offset += dataLength
     }
 
     return result
@@ -493,21 +484,16 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     version: number,
     ecLevel: number,
   ): number[] {
-    const ecBlockInfo = EC_BLOCKS[version - 1][ecLevel]
+    const blockDataLengths = this.getBlockDataLengths(version, ecLevel)
     const ecPerBlock = EC_CODEWORDS_PER_BLOCK[version - 1][ecLevel]
-    const totalBlocks = ecBlockInfo[0] + ecBlockInfo[1]
-    const totalDataCodewords = DATA_CODEWORDS[version - 1][ecLevel]
-    const blockSize1 = Math.floor(totalDataCodewords / totalBlocks)
-    const blockSize2 = blockSize1 + 1
+    const maxDataLength = Math.max(...blockDataLengths)
 
     const result: number[] = []
 
     // 交错数据码字
-    const maxDataLen = blockSize2
-    for (let i = 0; i < maxDataLen; i++) {
-      for (let j = 0; j < totalBlocks; j++) {
-        const blockDataLen = j < ecBlockInfo[0] ? blockSize1 : blockSize2
-        if (i < blockDataLen) {
+    for (let i = 0; i < maxDataLength; i++) {
+      for (let j = 0; j < blocks.length; j++) {
+        if (i < blockDataLengths[j]) {
           result.push(blocks[j][i])
         }
       }
@@ -515,13 +501,23 @@ export class QREncoder extends Encoder<QRCodeOptions> {
 
     // 交错纠错码字
     for (let i = 0; i < ecPerBlock; i++) {
-      for (let j = 0; j < totalBlocks; j++) {
-        const dataLen = j < ecBlockInfo[0] ? blockSize1 : blockSize2
-        result.push(blocks[j][dataLen + i])
+      for (let j = 0; j < blocks.length; j++) {
+        result.push(blocks[j][blockDataLengths[j] + i])
       }
     }
 
     return result
+  }
+
+  private getBlockDataLengths(version: number, ecLevel: number): number[] {
+    const totalBlocks = EC_BLOCKS_COUNT[version - 1][ecLevel]
+    const totalDataCodewords = DATA_CODEWORDS[version - 1][ecLevel]
+    const shortBlockLength = Math.floor(totalDataCodewords / totalBlocks)
+    const longBlockCount = totalDataCodewords % totalBlocks
+    const shortBlockCount = totalBlocks - longBlockCount
+
+    return Array.from({ length: totalBlocks }, (_unused, index) =>
+      index < shortBlockCount ? shortBlockLength : shortBlockLength + 1)
   }
 
   private placeFinderPatterns(
@@ -654,20 +650,29 @@ export class QREncoder extends Encoder<QRCodeOptions> {
     isFunction: boolean[][],
     size: number,
   ): void {
-    // 水平格式信息
-    for (let i = 0; i < 9; i++) {
-      isFunction[8][i] = true
+    for (let i = 0; i < 15; i++) {
+      if (i < 6) {
+        isFunction[i][8] = true
+      }
+      else if (i < 8) {
+        isFunction[i + 1][8] = true
+      }
+      else {
+        isFunction[size - 15 + i][8] = true
+      }
+
+      if (i < 8) {
+        isFunction[8][size - i - 1] = true
+      }
+      else if (i < 9) {
+        isFunction[8][15 - i] = true
+      }
+      else {
+        isFunction[8][14 - i] = true
+      }
     }
-    for (let i = 0; i < 8; i++) {
-      isFunction[8][size - 1 - i] = true
-    }
-    // 垂直格式信息
-    for (let i = 0; i < 8; i++) {
-      isFunction[i][8] = true
-    }
-    for (let i = 0; i < 9; i++) {
-      isFunction[size - 1 - i][8] = true
-    }
+
+    isFunction[size - 8][8] = true
   }
 
   private reserveVersionInfo(
@@ -734,29 +739,31 @@ export class QREncoder extends Encoder<QRCodeOptions> {
 
     const size = matrix.length
 
-    // 水平格式信息（左）
-    for (let i = 0; i < 6; i++) {
-      matrix[8][i] = ((formatInfo >> (14 - i)) & 1) as DotValue
-    }
-    matrix[8][7] = ((formatInfo >> 8) & 1) as DotValue
-    matrix[8][8] = ((formatInfo >> 7) & 1) as DotValue
+    for (let i = 0; i < 15; i++) {
+      const bit = ((formatInfo >> i) & 1) as DotValue
 
-    // 水平格式信息（右）
-    for (let i = 0; i < 6; i++) {
-      matrix[8][size - 2 - i] = ((formatInfo >> i) & 1) as DotValue
-    }
-    matrix[8][size - 8] = ((formatInfo >> 6) & 1) as DotValue
+      if (i < 6) {
+        matrix[i][8] = bit
+      }
+      else if (i < 8) {
+        matrix[i + 1][8] = bit
+      }
+      else {
+        matrix[size - 15 + i][8] = bit
+      }
 
-    // 垂直格式信息（上）
-    for (let i = 0; i < 6; i++) {
-      matrix[i][8] = ((formatInfo >> (14 - i)) & 1) as DotValue
+      if (i < 8) {
+        matrix[8][size - i - 1] = bit
+      }
+      else if (i < 9) {
+        matrix[8][15 - i] = bit
+      }
+      else {
+        matrix[8][14 - i] = bit
+      }
     }
-    matrix[7][8] = ((formatInfo >> 8) & 1) as DotValue
 
-    // 垂直格式信息（下）
-    for (let i = 0; i < 7; i++) {
-      matrix[size - 2 - i][8] = ((formatInfo >> i) & 1) as DotValue
-    }
+    matrix[size - 8][8] = 1
   }
 
   private calculateFormatInfo(ecLevel: number, mask: number): number {

@@ -38,8 +38,8 @@ function generateGeneratorPoly(degree: number): number[] {
     const newPoly: number[] = Array.from({ length: poly.length + 1 }, () => 0)
     const factor = EXP_TABLE[i]
     for (let j = 0; j < poly.length; j++) {
-      newPoly[j] ^= gfMultiply(poly[j], factor)
-      newPoly[j + 1] ^= poly[j]
+      newPoly[j] ^= poly[j]
+      newPoly[j + 1] ^= gfMultiply(poly[j], factor)
     }
     poly = newPoly
   }

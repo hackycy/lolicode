@@ -18,6 +18,18 @@ import {
 } from '@lolicode/core'
 import { renderTerminal } from '@lolicode/renderer-terminal'
 
+const barcodeMatrixOptions = {
+  height: 12,
+  moduleWidth: 1,
+  quietZone: 2,
+  verticalMargin: 0,
+}
+
+const barcodeTerminalOptions = {
+  barHeight: 4,
+  maxWidth: 60,
+}
+
 function section(title: string): void {
   console.log()
   console.log(`${'='.repeat(50)}`)
@@ -73,31 +85,31 @@ console.log(renderTerminal(aztec('ABC').data))
 // ─── Barcodes ───────────────────────────────────────
 
 section('Code 128')
-console.log(renderTerminal(code128('Hello').data))
+console.log(renderTerminal(code128('Hello', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('EAN-13')
-console.log(renderTerminal(ean13('590123412345').data))
+console.log(renderTerminal(ean13('590123412345', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('EAN-8')
-console.log(renderTerminal(ean8('96385074').data))
+console.log(renderTerminal(ean8('96385074', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('UPC-A')
-console.log(renderTerminal(upca('036000291452').data))
+console.log(renderTerminal(upca('036000291452', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('UPC-E')
-console.log(renderTerminal(upce('01234565').data))
+console.log(renderTerminal(upce('01234565', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('Code 39')
-console.log(renderTerminal(code39('CODE39').data))
+console.log(renderTerminal(code39('CODE39', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('ITF')
-console.log(renderTerminal(itf('1234567890').data))
+console.log(renderTerminal(itf('1234567890', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('Codabar')
-console.log(renderTerminal(codabar('A12345B').data))
+console.log(renderTerminal(codabar('A12345B', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('GS1-128')
-console.log(renderTerminal(gs1_128('(01)09521234543213').data))
+console.log(renderTerminal(gs1_128('(01)09521234543213', barcodeMatrixOptions), barcodeTerminalOptions))
 
 section('MSI Plessey')
-console.log(renderTerminal(msi('12345').data))
+console.log(renderTerminal(msi('12345', barcodeMatrixOptions), barcodeTerminalOptions))

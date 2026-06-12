@@ -9,6 +9,6 @@ export type { TerminalRenderOptions }
 export class TerminalRenderer implements Renderer<string, TerminalRenderOptions> {
   readonly name = 'terminal'
   render(matrix: DotMatrix, options?: TerminalRenderOptions): string {
-    return renderTerminal(matrix.data, options)
+    return renderTerminal(matrix, options)
   }
 }

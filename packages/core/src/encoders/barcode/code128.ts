@@ -143,13 +143,7 @@ export class Code128Encoder extends BarcodeEncoder {
     return true
   }
 
-  getModuleCount(content: string): number {
-    const codes = this.encodeContent(content)
-    // start + data + checksum + stop + 终止条(2)
-    return (codes.length + 3) * 11 + 2
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const codes = this.encodeContent(content)
     const checksum = this.calculateChecksum(codes)
     const allCodes = [codes[0], ...codes.slice(1), checksum, STOP_CODE]

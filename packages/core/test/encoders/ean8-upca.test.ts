@@ -47,8 +47,8 @@ describe('eAN8Encoder', () => {
     expect(a.data).toEqual(b.data)
   })
 
-  it('has correct width (67 modules + margin)', () => {
-    const result = encoder.encode('9638507', { margin: 0 })
+  it('has correct logical width when rendered without quiet zone scaling', () => {
+    const result = encoder.encode('9638507', { moduleWidth: 1, quietZone: 0, verticalMargin: 0 })
     expect(result.width).toBe(67)
   })
 
@@ -95,8 +95,8 @@ describe('uPCAEncoder', () => {
     expect(a.data).toEqual(b.data)
   })
 
-  it('has correct width (95 modules + margin)', () => {
-    const result = encoder.encode('03600029145', { margin: 0 })
+  it('has correct logical width when rendered without quiet zone scaling', () => {
+    const result = encoder.encode('03600029145', { moduleWidth: 1, quietZone: 0, verticalMargin: 0 })
     expect(result.width).toBe(95)
   })
 

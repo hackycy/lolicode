@@ -1,72 +1,108 @@
-import type { BarcodeOptions, DotMatrix, DotValue } from '../../types'
+import type { BarcodeOptions, BarcodeSymbol, DotMatrix, DotValue } from '../../types'
 import { Encoder } from '../base'
 
 /**
  * 一维条形码编码器基类
  *
- * 一维码的点阵结构：
- * - 宽度 = 所有条空序列的总模块数
- * - 高度 = height（像素）映射为模块行数
- * - 每列是统一的（条或空），每一行相同
+ * 编码器先生成一维逻辑符号，再由统一布局规则映射为 DotMatrix。
+ * - encodeToRuns: 条/空交替的窄模块长度序列，从条开始
+ * - moduleWidth: 每个窄模块渲染成多少列
+ * - height: 条码主体高度行数
+ * - quietZone: 左右静区窄模块数
+ * - verticalMargin: 上下留白行数
  */
 export abstract class BarcodeEncoder extends Encoder<BarcodeOptions> {
   /**
-   * 编码内容为条空序列（1=条, 0=空），每个元素为模块数
+   * 编码内容为条空 run-length 序列，从条开始，每个元素为窄模块数
    */
-  abstract encodeToModules(content: string): number[]
+  abstract encodeToRuns(content: string): number[]
 
   /**
    * 获取编码后条空序列的总模块数
    */
-  abstract getModuleCount(content: string): number
+  getModuleCount(content: string): number {
+    return this.encodeToRuns(content).reduce((sum, run) => sum + run, 0)
+  }
 
-  encode(content: string, options?: BarcodeOptions): DotMatrix {
+  encodeSymbol(content: string): BarcodeSymbol {
     if (!this.validate(content)) {
       throw new Error(`Invalid content for ${this.getType()}: "${content}"`)
     }
 
-    const moduleWidth = options?.moduleWidth ?? 2
-    const barHeight = options?.height ?? 100
-    const margin = options?.margin ?? 4
-
-    const modules = this.encodeToModules(content)
-    const moduleCount = modules.reduce((sum, m) => sum + m, 0)
-
-    // 条高映射为行数：height / moduleWidth，至少 1 行
-    const rowCount = Math.max(1, Math.round(barHeight / moduleWidth))
-    const totalRows = rowCount + margin * 2
-    const totalCols = moduleCount + margin * 2
-
-    // 初始化空白矩阵
-    const data: DotValue[][] = []
-    for (let r = 0; r < totalRows; r++) {
-      data.push(Array.from({ length: totalCols }).fill(0) as DotValue[])
-    }
-
-    // 填充条形码区域
-    let col = margin
+    const runs = this.encodeToRuns(content)
+    const modules: DotValue[] = []
     let isBar = true
-    for (const mod of modules) {
-      if (isBar) {
-        for (let c = 0; c < mod; c++) {
-          for (let r = margin; r < margin + rowCount; r++) {
-            data[r][col + c] = 1
-          }
-        }
+
+    for (const run of runs) {
+      if (!Number.isInteger(run) || run <= 0) {
+        throw new Error(`Invalid run length for ${this.getType()}: ${run}`)
       }
-      col += mod
+      for (let i = 0; i < run; i++) {
+        modules.push(isBar ? 1 : 0)
+      }
       isBar = !isBar
     }
 
     return {
-      data,
-      width: totalCols,
-      height: totalRows,
+      modules,
+      width: modules.length,
       metadata: {
         type: this.getType(),
         contentLength: content.length,
         generatedAt: Date.now(),
       },
     }
+  }
+
+  encode(content: string, options?: BarcodeOptions): DotMatrix {
+    const symbol = this.encodeSymbol(content)
+    const layout = this.normalizeLayout(options)
+    const totalRows = layout.height + layout.verticalMargin * 2
+    const totalCols = (symbol.width + layout.quietZone * 2) * layout.moduleWidth
+
+    const data: DotValue[][] = []
+    for (let r = 0; r < totalRows; r++) {
+      data.push(Array.from({ length: totalCols }).fill(0) as DotValue[])
+    }
+
+    const startCol = layout.quietZone * layout.moduleWidth
+    for (let index = 0; index < symbol.modules.length; index++) {
+      if (symbol.modules[index] === 1) {
+        const moduleStart = startCol + index * layout.moduleWidth
+        for (let c = 0; c < layout.moduleWidth; c++) {
+          for (let r = layout.verticalMargin; r < layout.verticalMargin + layout.height; r++) {
+            data[r][moduleStart + c] = 1
+          }
+        }
+      }
+    }
+
+    return {
+      data,
+      width: totalCols,
+      height: totalRows,
+      metadata: symbol.metadata,
+    }
+  }
+
+  private normalizeLayout(options?: BarcodeOptions): Required<Pick<BarcodeOptions, 'height' | 'moduleWidth' | 'quietZone' | 'verticalMargin'>> {
+    const layout = {
+      moduleWidth: options?.moduleWidth ?? 2,
+      height: options?.height ?? 24,
+      quietZone: options?.quietZone ?? 10,
+      verticalMargin: options?.verticalMargin ?? 1,
+    }
+
+    for (const [key, value] of Object.entries(layout)) {
+      if (!Number.isInteger(value) || value < 0) {
+        throw new Error(`Invalid barcode ${key}: ${value}`)
+      }
+    }
+    if (layout.moduleWidth === 0)
+      throw new Error('Invalid barcode moduleWidth: 0')
+    if (layout.height === 0)
+      throw new Error('Invalid barcode height: 0')
+
+    return layout
   }
 }

@@ -48,11 +48,7 @@ export class EAN8Encoder extends BarcodeEncoder {
     return isValidEAN8(content)
   }
 
-  getModuleCount(_content: string): number {
-    return 67
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const digits = this.prepareDigits(content)
     const leftDigits = digits.slice(0, 4)
     const rightDigits = digits.slice(4, 8)

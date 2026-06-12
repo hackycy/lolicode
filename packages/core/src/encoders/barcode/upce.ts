@@ -50,11 +50,7 @@ export class UPCEncoder extends BarcodeEncoder {
     return content.length >= 6 && content.length <= 8
   }
 
-  getModuleCount(_content: string): number {
-    return 51
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const digits = this.prepareDigits(content)
     const lastDigit = digits[digits.length - 1]
 

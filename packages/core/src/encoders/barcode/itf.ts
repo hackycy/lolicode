@@ -125,14 +125,7 @@ export class ITFEncoder extends BarcodeEncoder {
     return isValidITF(content) && content.length <= this.getMaxLength()
   }
 
-  getModuleCount(content: string): number {
-    const paddedLength = content.length % 2 === 0 ? content.length : content.length + 1
-    const pairs = paddedLength / 2
-    // 起始条(4) + 数据(pairs * 14) + 终止条(5)
-    return 4 + pairs * 14 + 5
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     // 确保偶数位
     const paddedContent = content.length % 2 === 0 ? content : `0${content}`
 

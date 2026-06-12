@@ -51,6 +51,7 @@ export { Encoder } from './encoders/base'
 export { BaseRenderer } from './renderers/base'
 export type {
   BarcodeOptions,
+  BarcodeSymbol,
   // 选项类型
   BaseEncodeOptions,
   CanvasRenderOptions,

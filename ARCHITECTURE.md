@@ -139,6 +139,15 @@ export interface DotMatrix {
 }
 
 /**
+ * 一维条码逻辑符号：每个元素代表一个窄模块，1 = 条，0 = 空
+ */
+export interface BarcodeSymbol {
+  modules: DotValue[]
+  width: number
+  metadata: DotMatrixMetadata
+}
+
+/**
  * 点阵元数据
  */
 export interface DotMatrixMetadata {
@@ -162,8 +171,13 @@ export type CodeType
     | 'qrcode-micro'
     | 'datamatrix'
     | 'pdf417'
+    | 'aztec'
     | 'code128'
     | 'code39'
+    | 'code93'
+    | 'codabar'
+    | 'gs1_128'
+    | 'msi'
     | 'ean13'
     | 'ean8'
     | 'upca'
@@ -232,11 +246,15 @@ export interface PDF417Options extends BaseEncodeOptions {
 /**
  * 一维码编码选项
  */
-export interface BarcodeOptions extends BaseEncodeOptions {
-  /** 条宽（窄条的单位宽度），默认 2 */
+export interface BarcodeOptions {
+  /** 窄模块横向列数，默认 2 */
   moduleWidth?: number
-  /** 条高，默认 100 */
+  /** 条码主体高度（行数），默认 24 */
   height?: number
+  /** 左右静区宽度（窄模块数），默认 10 */
+  quietZone?: number
+  /** 上下留白高度（行数），默认 1 */
+  verticalMargin?: number
   /** 是否显示文字 */
   showText?: boolean
 }
@@ -266,17 +284,39 @@ export interface ITFOptions extends BarcodeOptions {
 }
 ```
 
-### 3.3 编码器接口
+### 3.3 一维码编码流程
+
+一维码编码器分为两层：
+
+1. **逻辑符号层**：码制实现只负责把内容编码为条/空 run-length 序列，并展开为 `BarcodeSymbol.modules`。该序列使用窄模块作为单位，不包含渲染尺寸、静区或上下留白。
+2. **矩阵布局层**：`BarcodeEncoder` 基类统一把 `BarcodeSymbol` 布局为 `DotMatrix`。`moduleWidth` 只控制横向模块列数，`height` 只控制条码主体行数，`quietZone` 只控制左右静区，`verticalMargin` 只控制上下留白。
+
+这一分层保证码制算法不依赖终端、SVG、Canvas 等渲染介质，也避免 QR Code 的四边 `margin` 语义污染一维码的左右静区语义。
+
+```typescript
+export abstract class BarcodeEncoder extends Encoder<BarcodeOptions> {
+  /** 条/空 run-length 序列，从条开始，每个元素为窄模块数 */
+  abstract encodeToRuns(content: string): number[]
+
+  /** 生成不含渲染尺寸的一维逻辑符号 */
+  encodeSymbol(content: string): BarcodeSymbol
+
+  /** 通过统一布局规则输出 DotMatrix */
+  encode(content: string, options?: BarcodeOptions): DotMatrix
+}
+```
+
+### 3.4 编码器接口
 
 ```typescript
 // packages/core/src/encoders/base.ts
 
-import type { BaseEncodeOptions, DotMatrix } from '../types'
+import type { CodeType, DotMatrix } from '../types'
 
 /**
  * 编码器抽象基类
  */
-export abstract class Encoder<TOptions extends BaseEncodeOptions> {
+export abstract class Encoder<TOptions = object> {
   /**
    * 编码内容为点阵数据
    * @param content 要编码的内容
@@ -302,7 +342,7 @@ export abstract class Encoder<TOptions extends BaseEncodeOptions> {
 }
 ```
 
-### 3.4 渲染器接口
+### 3.5 渲染器接口
 
 ```typescript
 // packages/core/src/renderers/types.ts
@@ -358,14 +398,22 @@ export interface SVGRenderOptions {
  * 终端渲染选项
  */
 export interface TerminalRenderOptions {
-  /** 空白字符，默认 '  '（两个空格） */
-  emptyChar?: string
-  /** 填充字符，默认 '██' */
-  filledChar?: string
-  /** 是否使用颜色 */
-  useColor?: boolean
+  /** 渲染模式；完整一维条码 DotMatrix 默认 bars，其它矩阵默认 utf8 */
+  mode?: 'utf8' | 'ansi' | 'small' | 'bars'
+  /** 终端层附加空白边距 */
+  margin?: number
+  /** 是否反转填充和空白 */
+  invert?: boolean
+  /** bars 模式输出高度，默认 6 */
+  barHeight?: number
+  /** bars 模式最大输出列数；用于终端预览，默认不压缩 */
+  maxWidth?: number
 }
 ```
+
+终端渲染器应优先接收完整 `DotMatrix`，以便根据 `metadata.type` 选择合适默认模式。二维码/Data Matrix/Aztec 等二维符号默认使用 `utf8` 半块压缩；一维条码默认使用 `bars`，将纵向重复的条码矩阵投影为固定高度的整块竖条，避免二维码式半块压缩在条码上下留白处生成 `▀`/`▄` 噪声。调用方传入裸 `DotValue[][]` 时，渲染器无法获知码制语义，因此只使用显式 `mode` 或默认 `utf8`。
+
+一维条码的精确宽度可能超过常见终端宽度，终端自动换行会破坏视觉结构。示例、playground 或其它终端预览场景应显式设置 `maxWidth`，把条码压缩为“可读预览”；需要保留模块精确性的渲染器（SVG、Canvas、PNG）不应使用 `maxWidth`。
 
 ---
 
@@ -405,6 +453,7 @@ export {
 
 export type {
   BarcodeOptions,
+  BarcodeSymbol,
   // 选项类型
   BaseEncodeOptions,
   CanvasRenderOptions,
@@ -504,8 +553,10 @@ console.log(qrMatrix)
 
 // 生成 Code 128 条形码点阵
 const barcodeMatrix = code128('123456789', {
-  height: 50,
   moduleWidth: 2,
+  height: 24,
+  quietZone: 10,
+  verticalMargin: 1,
 })
 ```
 

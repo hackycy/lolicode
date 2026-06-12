@@ -18,6 +18,15 @@ export interface DotMatrix {
 }
 
 /**
+ * 一维条码逻辑符号：每个元素代表一个窄模块，1 = 条，0 = 空
+ */
+export interface BarcodeSymbol {
+  modules: DotValue[]
+  width: number
+  metadata: DotMatrixMetadata
+}
+
+/**
  * 点阵元数据
  */
 export interface DotMatrixMetadata {

@@ -73,13 +73,7 @@ export class Code39Encoder extends BarcodeEncoder {
       && isValidCode39(content.toUpperCase())
   }
 
-  getModuleCount(content: string): number {
-    const data = `*${content.toUpperCase()}*`
-    // 每个字符 12 模块（含窄空间隔），减去最后一个间隔
-    return data.length * 12 - 1
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const data = `*${content.toUpperCase()}*`
     const modules: number[] = []
 

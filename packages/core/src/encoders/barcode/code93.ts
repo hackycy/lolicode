@@ -84,12 +84,7 @@ export class Code93Encoder extends BarcodeEncoder {
     return true
   }
 
-  getModuleCount(content: string): number {
-    // 起始(9) + 数据(content.length * 9) + 校验C(9) + 校验K(9) + 终止(9) + 终止条(1)
-    return (content.length + 4) * 9 + 1
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     // 计算校验字符
     const checkC = this.calculateCheckC(content)
     const checkK = this.calculateCheckK(content + checkC)

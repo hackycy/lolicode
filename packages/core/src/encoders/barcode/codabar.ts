@@ -54,18 +54,7 @@ export class CodabarEncoder extends BarcodeEncoder {
     return true
   }
 
-  getModuleCount(content: string): number {
-    // 每字符模块数取决于位模式长度（9 或 10），字符间有窄空间隔
-    let total = 0
-    for (let i = 0; i < content.length; i++) {
-      const idx = CODABAR_CHARS.indexOf(content[i])
-      total += CODABAR_PATTERNS[idx].length
-    }
-    total += Math.max(0, content.length - 1) // 字符间窄空间隔
-    return total
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     const modules: number[] = []
 
     for (let i = 0; i < content.length; i++) {

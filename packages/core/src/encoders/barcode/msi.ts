@@ -36,12 +36,7 @@ export class MSIEncoder extends BarcodeEncoder {
     return /^\d+$/.test(content)
   }
 
-  getModuleCount(content: string): number {
-    // 起始宽条(2) + 数据((content.length + 1) * 12) + 终止宽条(2) + 间隔(2)
-    return 2 + (content.length + 1) * 12 + 2
-  }
-
-  encodeToModules(content: string): number[] {
+  encodeToRuns(content: string): number[] {
     // 计算 Mod 10 校验位
     const checkDigit = this.calculateMod10Check(content)
     const fullContent = content + checkDigit

@@ -41,8 +41,8 @@ describe('uPCEncoder', () => {
     expect(a.data).toEqual(b.data)
   })
 
-  it('has correct width (51 modules + margin)', () => {
-    const result = encoder.encode('012345', { margin: 0 })
+  it('has correct logical width when rendered without quiet zone scaling', () => {
+    const result = encoder.encode('012345', { moduleWidth: 1, quietZone: 0, verticalMargin: 0 })
     expect(result.width).toBe(51)
   })
 })

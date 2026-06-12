@@ -39,6 +39,33 @@ describe('code128Encoder', () => {
     isValidBarcodeMatrix(result)
   })
 
+  it('encodes a logical one-dimensional symbol before matrix layout', () => {
+    const symbol = encoder.encodeSymbol('ABC123')
+    expect(symbol.width).toBe(encoder.getModuleCount('ABC123'))
+    expect(symbol.modules).toHaveLength(symbol.width)
+    expect(symbol.metadata.type).toBe('code128')
+  })
+
+  it('uses independent barcode layout defaults', () => {
+    const result = encoder.encode('ABC123')
+    expect(result.height).toBe(26)
+    expect(result.width).toBe((encoder.getModuleCount('ABC123') + 20) * 2)
+  })
+
+  it('lays out module width, quiet zone, height, and vertical margin independently', () => {
+    const result = encoder.encode('ABC123', {
+      height: 5,
+      moduleWidth: 3,
+      quietZone: 2,
+      verticalMargin: 1,
+    })
+
+    expect(result.height).toBe(7)
+    expect(result.width).toBe((encoder.getModuleCount('ABC123') + 4) * 3)
+    expect(result.data[0].every(cell => cell === 0)).toBe(true)
+    expect(result.data[1].slice(0, 6).every(cell => cell === 0)).toBe(true)
+  })
+
   it('produces consistent output', () => {
     const a = encoder.encode('TEST')
     const b = encoder.encode('TEST')
@@ -97,9 +124,9 @@ describe('eAN13Encoder', () => {
   })
 
   it('encodes 12-digit content with auto check digit', () => {
-    const result = encoder.encode('400638133393')
+    const result = encoder.encode('400638133393', { moduleWidth: 1, quietZone: 0, verticalMargin: 0 })
     expect(result.metadata.type).toBe('ean13')
-    expect(result.width).toBe(95 + 8) // 95 modules + 2*4 margin
+    expect(result.width).toBe(95)
     isValidBarcodeMatrix(result)
   })
 

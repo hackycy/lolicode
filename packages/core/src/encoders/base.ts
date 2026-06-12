@@ -1,9 +1,9 @@
-import type { BaseEncodeOptions, CodeType, DotMatrix } from '../types'
+import type { CodeType, DotMatrix } from '../types'
 
 /**
  * 编码器抽象基类
  */
-export abstract class Encoder<TOptions extends BaseEncodeOptions> {
+export abstract class Encoder<TOptions = object> {
   /**
    * 编码内容为点阵数据
    */

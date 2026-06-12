@@ -1,3 +1,4 @@
+import { code128 } from '@lolicode/core'
 import { describe, expect, it } from 'vitest'
 import { renderTerminal, TerminalRenderer } from '../src'
 
@@ -65,7 +66,7 @@ describe('renderTerminal', () => {
     it('contains both fg and bg ANSI codes', () => {
       const result = renderTerminal([
         [1, 0],
-        [0, 1],
+        [1, 0],
       ], { mode: 'small' })
       expect(result).toContain('\x1B[40m')
       expect(result).toContain('\x1B[47m')
@@ -80,6 +81,53 @@ describe('renderTerminal', () => {
       ], { mode: 'small' })
       const lines = result.split('\n')
       expect(lines).toHaveLength(1)
+    })
+
+    it('renders half-block colors with foreground as the top module', () => {
+      const result = renderTerminal([
+        [1, 0],
+        [0, 1],
+      ], { mode: 'small' })
+
+      expect(result).toBe('\x1B[47m\x1B[30m▀\x1B[0m\x1B[47m\x1B[30m▄\x1B[0m')
+    })
+  })
+
+  describe('bars mode', () => {
+    it('renders a raw matrix as projected bars when requested', () => {
+      const result = renderTerminal([
+        [0, 1, 0, 1],
+        [0, 1, 0, 1],
+      ], { mode: 'bars', barHeight: 2 })
+
+      expect(result).toBe(' █ █\n █ █')
+    })
+
+    it('uses bars mode by default for barcode DotMatrix input', () => {
+      const result = renderTerminal(code128('A'), { barHeight: 2 })
+
+      expect(result.split('\n')).toHaveLength(2)
+      expect(result).toContain('█')
+      expect(result).not.toContain('▀')
+      expect(result).not.toContain('▄')
+    })
+
+    it('fits projected bars to a maximum terminal width', () => {
+      const result = renderTerminal(code128('Hello'), { barHeight: 2, maxWidth: 40 })
+      const lines = result.split('\n')
+
+      expect(lines).toHaveLength(2)
+      expect(lines.every(line => line.length <= 40)).toBe(true)
+      expect(result).toContain('█')
+    })
+
+    it('keeps raw matrix input on utf8 mode by default', () => {
+      const result = renderTerminal([
+        [1],
+        [0],
+      ])
+
+      expect(result).toBe('▀')
     })
   })
 
@@ -171,6 +219,16 @@ describe('terminalRenderer', () => {
     }
     const result = renderer.render(matrix)
     expect(result).toBe('▀▄▀\n▀ ▀')
+  })
+
+  it('renders barcode matrices with barcode-aware defaults', () => {
+    const renderer = new TerminalRenderer()
+    const result = renderer.render(code128('A'), { barHeight: 1 })
+
+    expect(result.split('\n')).toHaveLength(1)
+    expect(result).toContain('█')
+    expect(result).not.toContain('▀')
+    expect(result).not.toContain('▄')
   })
 
   it('passes options through', () => {

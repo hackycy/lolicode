@@ -51,11 +51,15 @@ export interface PDF417Options extends BaseEncodeOptions {
 /**
  * 一维码编码选项
  */
-export interface BarcodeOptions extends BaseEncodeOptions {
-  /** 条宽（窄条的单位宽度），默认 2 */
+export interface BarcodeOptions {
+  /** 窄模块横向列数，默认 2 */
   moduleWidth?: number
-  /** 条高，默认 100 */
+  /** 条码主体高度（行数），默认 24 */
   height?: number
+  /** 左右静区宽度（窄模块数），默认 10 */
+  quietZone?: number
+  /** 上下留白高度（行数），默认 1 */
+  verticalMargin?: number
   /** 是否显示文字 */
   showText?: boolean
 }

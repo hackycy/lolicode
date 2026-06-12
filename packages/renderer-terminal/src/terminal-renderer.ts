@@ -1,13 +1,44 @@
+import type { CodeType, DotMatrix as CoreDotMatrix } from '@lolicode/core'
+
 type DotValue = 0 | 1
-type DotMatrix = DotValue[][]
+type DotMatrixData = DotValue[][]
+type TerminalInput = CoreDotMatrix | DotMatrixData
 
 export interface TerminalRenderOptions {
-  mode?: 'utf8' | 'ansi' | 'small'
+  mode?: 'utf8' | 'ansi' | 'small' | 'bars'
   margin?: number
   invert?: boolean
+  barHeight?: number
+  maxWidth?: number
 }
 
-function addMargin(matrix: DotMatrix, margin: number): DotMatrix {
+const BARCODE_TYPES = new Set<CodeType>([
+  'code128',
+  'code39',
+  'code93',
+  'codabar',
+  'gs1_128',
+  'msi',
+  'ean13',
+  'ean8',
+  'upca',
+  'upce',
+  'itf',
+])
+
+function isCoreDotMatrix(input: TerminalInput): input is CoreDotMatrix {
+  return !Array.isArray(input)
+}
+
+function getMatrixData(input: TerminalInput): DotMatrixData {
+  return isCoreDotMatrix(input) ? input.data : input
+}
+
+function isBarcodeMatrix(input: TerminalInput): boolean {
+  return isCoreDotMatrix(input) && BARCODE_TYPES.has(input.metadata.type)
+}
+
+function addMargin(matrix: DotMatrixData, margin: number): DotMatrixData {
   if (margin === 0)
     return matrix
 
@@ -15,7 +46,7 @@ function addMargin(matrix: DotMatrix, margin: number): DotMatrix {
   const srcWidth = srcHeight > 0 ? matrix[0].length : 0
   const newWidth = srcWidth + margin * 2
   const newHeight = srcHeight + margin * 2
-  const padded: DotMatrix = Array.from({ length: newHeight }, () => Array.from({ length: newWidth }, () => 0 as DotValue))
+  const padded: DotMatrixData = Array.from({ length: newHeight }, () => Array.from({ length: newWidth }, () => 0 as DotValue))
 
   for (let r = 0; r < srcHeight; r++) {
     const srcRow = matrix[r]
@@ -27,7 +58,7 @@ function addMargin(matrix: DotMatrix, margin: number): DotMatrix {
   return padded
 }
 
-function renderUtf8(matrix: DotMatrix, invert: boolean): string {
+function renderUtf8(matrix: DotMatrixData, invert: boolean): string {
   if (matrix.length === 0)
     return ''
 
@@ -63,7 +94,7 @@ function renderUtf8(matrix: DotMatrix, invert: boolean): string {
   return rows.join('\n')
 }
 
-function renderAnsi(matrix: DotMatrix, invert: boolean): string {
+function renderAnsi(matrix: DotMatrixData, invert: boolean): string {
   if (matrix.length === 0)
     return ''
 
@@ -80,7 +111,7 @@ function renderAnsi(matrix: DotMatrix, invert: boolean): string {
     .join('\n')
 }
 
-function renderSmall(matrix: DotMatrix, invert: boolean): string {
+function renderSmall(matrix: DotMatrixData, invert: boolean): string {
   if (matrix.length === 0)
     return ''
 
@@ -103,7 +134,7 @@ function renderSmall(matrix: DotMatrix, invert: boolean): string {
       if (t === 1 && b === 1)
         line += '\x1B[40m\x1B[30m█\x1B[0m'
       else if (t === 1 && b === 0)
-        line += '\x1B[40m\x1B[37m▀\x1B[0m'
+        line += '\x1B[47m\x1B[30m▀\x1B[0m'
       else if (t === 0 && b === 1)
         line += '\x1B[47m\x1B[30m▄\x1B[0m'
       else
@@ -116,12 +147,52 @@ function renderSmall(matrix: DotMatrix, invert: boolean): string {
   return rows.join('\n')
 }
 
-export function renderTerminal(matrix: DotMatrix, options?: TerminalRenderOptions): string {
-  const mode = options?.mode ?? 'utf8'
+function fitColumns(row: DotValue[], maxWidth?: number): DotValue[] {
+  if (maxWidth === undefined || maxWidth <= 0 || row.length <= maxWidth)
+    return row
+
+  return Array.from({ length: maxWidth }, (_unused, index) => {
+    const start = Math.floor(index * row.length / maxWidth)
+    const end = Math.max(start + 1, Math.floor((index + 1) * row.length / maxWidth))
+    let filled = 0
+    for (let i = start; i < end; i++) {
+      if (row[i] === 1)
+        filled++
+    }
+    return filled * 2 >= end - start ? 1 : 0
+  })
+}
+
+function renderBars(matrix: DotMatrixData, invert: boolean, height: number, maxWidth?: number): string {
+  if (matrix.length === 0 || height <= 0)
+    return ''
+
+  const width = matrix[0].length
+  const projected: DotValue[] = []
+  for (let col = 0; col < width; col++) {
+    let filled = false
+    for (const row of matrix) {
+      if (row[col] === 1) {
+        filled = true
+        break
+      }
+    }
+    projected.push((invert ? !filled : filled) ? 1 : 0)
+  }
+
+  const fitted = fitColumns(projected, maxWidth)
+  const line = fitted.map(cell => cell === 1 ? '█' : ' ').join('')
+  return Array.from({ length: height }, () => line).join('\n')
+}
+
+export function renderTerminal(input: TerminalInput, options?: TerminalRenderOptions): string {
+  const mode = options?.mode ?? (isBarcodeMatrix(input) ? 'bars' : 'utf8')
   const margin = options?.margin ?? 0
   const invert = options?.invert ?? false
+  const barHeight = options?.barHeight ?? 6
+  const maxWidth = options?.maxWidth
 
-  const padded = addMargin(matrix, margin)
+  const padded = addMargin(getMatrixData(input), margin)
 
   switch (mode) {
     case 'utf8':
@@ -130,5 +201,7 @@ export function renderTerminal(matrix: DotMatrix, options?: TerminalRenderOption
       return renderAnsi(padded, invert)
     case 'small':
       return renderSmall(padded, invert)
+    case 'bars':
+      return renderBars(padded, invert, barHeight, maxWidth)
   }
 }
