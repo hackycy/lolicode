@@ -1,112 +1,190 @@
-import type { DotMatrix } from '@lolicode/core'
 import { describe, expect, it } from 'vitest'
-import { TerminalRenderer } from '../src/terminal-renderer'
+import { renderTerminal, TerminalRenderer } from '../src'
 
-function makeSimpleMatrix(): DotMatrix {
-  // 3x3 矩阵:
-  // 1 0 1
-  // 0 1 0
-  // 1 0 1
-  return {
-    data: [
-      [1, 0, 1],
-      [0, 1, 0],
-      [1, 0, 1],
-    ],
-    width: 3,
-    height: 3,
-    metadata: {
-      type: 'qrcode',
-      generatedAt: Date.now(),
-    },
-  }
-}
+type DotValue = 0 | 1
+
+describe('renderTerminal', () => {
+  describe('utf8 mode (default)', () => {
+    it('renders default utf8 mode', () => {
+      const result = renderTerminal([
+        [1, 0, 1],
+        [0, 1, 0],
+        [1, 0, 1],
+      ])
+      // Row 0+1: top=[1,0,1] bottom=[0,1,0] -> ▀▄▀
+      // Row 2 (odd, bottom=0): top=[1,0,1] bottom=[0,0,0] -> ▀ ▀
+      expect(result).toBe('▀▄▀\n▀ ▀')
+    })
+
+    it('compresses 2 rows into 1 terminal row', () => {
+      const result = renderTerminal([
+        [1, 1],
+        [1, 1],
+      ])
+      const lines = result.split('\n')
+      expect(lines).toHaveLength(1)
+      expect(lines[0]).toBe('██')
+    })
+
+    it('handles odd height with bottom=0 for last row', () => {
+      const result = renderTerminal([
+        [1],
+        [0],
+        [1],
+      ])
+      const lines = result.split('\n')
+      expect(lines).toHaveLength(2)
+      expect(lines[0]).toBe('▀') // top=1, bottom=0
+      expect(lines[1]).toBe('▀') // top=1, bottom=0 (no bottom row)
+    })
+  })
+
+  describe('ansi mode', () => {
+    it('contains ANSI escape codes', () => {
+      const result = renderTerminal([
+        [1, 0],
+        [0, 1],
+      ], { mode: 'ansi' })
+      expect(result).toContain('\x1B[40m')
+      expect(result).toContain('\x1B[47m')
+      expect(result).toContain('\x1B[0m')
+    })
+
+    it('has correct structure (2 columns per module)', () => {
+      const result = renderTerminal([
+        [1, 0],
+      ], { mode: 'ansi' })
+      const lines = result.split('\n')
+      expect(lines).toHaveLength(1)
+      // filled = black bg + 2 spaces + reset, empty = white bg + 2 spaces + reset
+      expect(lines[0]).toBe('\x1B[40m  \x1B[0m\x1B[47m  \x1B[0m')
+    })
+  })
+
+  describe('small mode', () => {
+    it('contains both fg and bg ANSI codes', () => {
+      const result = renderTerminal([
+        [1, 0],
+        [0, 1],
+      ], { mode: 'small' })
+      expect(result).toContain('\x1B[40m')
+      expect(result).toContain('\x1B[47m')
+      expect(result).toContain('\x1B[30m')
+      expect(result).toContain('\x1B[37m')
+    })
+
+    it('is most compact (1 column per module, 2 rows compressed)', () => {
+      const result = renderTerminal([
+        [1, 1],
+        [1, 1],
+      ], { mode: 'small' })
+      const lines = result.split('\n')
+      expect(lines).toHaveLength(1)
+    })
+  })
+
+  describe('margin', () => {
+    it('adds correct number of empty rows and columns', () => {
+      const result = renderTerminal([
+        [1],
+      ], { margin: 1 })
+      // Matrix becomes 3x3 with 1 in center:
+      // 0 0 0
+      // 0 1 0
+      // 0 0 0
+      const lines = result.split('\n')
+      expect(lines).toHaveLength(2) // 3 rows compressed to 2 terminal rows
+    })
+
+    it('margin 0 does not change output', () => {
+      const matrix = [
+        [1, 0],
+        [0, 1],
+      ] as DotValue[][]
+      const noMargin = renderTerminal(matrix, { margin: 0 })
+      const defaultMargin = renderTerminal(matrix)
+      expect(noMargin).toBe(defaultMargin)
+    })
+  })
+
+  describe('invert', () => {
+    it('swaps filled and empty in utf8 mode', () => {
+      const normal = renderTerminal([
+        [1, 0],
+        [0, 1],
+      ])
+      const inverted = renderTerminal([
+        [1, 0],
+        [0, 1],
+      ], { invert: true })
+      // Normal: top=[1,0] bottom=[0,1] -> '▀▄'
+      // Inverted: top=[0,1] bottom=[1,0] -> '▄▀'
+      expect(normal).toBe('▀▄')
+      expect(inverted).toBe('▄▀')
+    })
+
+    it('all-zero inverted becomes all-one', () => {
+      const allZero = [
+        [0, 0],
+        [0, 0],
+      ] as DotValue[][]
+      expect(renderTerminal(allZero)).toBe('  ')
+      expect(renderTerminal(allZero, { invert: true })).toBe('██')
+    })
+  })
+
+  describe('edge cases', () => {
+    it('empty matrix returns empty string', () => {
+      const result = renderTerminal([])
+      expect(result).toBe('')
+    })
+
+    it('single row matrix (odd height edge case)', () => {
+      const result = renderTerminal([
+        [1, 0, 1],
+      ])
+      const lines = result.split('\n')
+      expect(lines).toHaveLength(1)
+      // top=[1,0,1], bottom=[0,0,0] -> ▀ ▀
+      expect(lines[0]).toBe('▀ ▀')
+    })
+  })
+})
 
 describe('terminalRenderer', () => {
-  it('renders with default characters', () => {
-    const renderer = new TerminalRenderer()
-    const matrix = makeSimpleMatrix()
-    const result = renderer.render(matrix)
-
-    const lines = result.split('\n')
-    expect(lines).toHaveLength(3)
-    expect(lines[0]).toBe('██  ██')
-    expect(lines[1]).toBe('  ██  ')
-    expect(lines[2]).toBe('██  ██')
-  })
-
-  it('renders with custom characters', () => {
-    const renderer = new TerminalRenderer()
-    const matrix = makeSimpleMatrix()
-    const result = renderer.render(matrix, {
-      filledChar: '##',
-      emptyChar: '..',
-    })
-
-    const lines = result.split('\n')
-    expect(lines[0]).toBe('##..##')
-    expect(lines[1]).toBe('..##..')
-    expect(lines[2]).toBe('##..##')
-  })
-
-  it('renders single character mode', () => {
-    const renderer = new TerminalRenderer()
-    const matrix = makeSimpleMatrix()
-    const result = renderer.render(matrix, {
-      filledChar: '#',
-      emptyChar: '.',
-    })
-
-    const lines = result.split('\n')
-    expect(lines[0]).toBe('#.#')
-    expect(lines[1]).toBe('.#.')
-    expect(lines[2]).toBe('#.#')
-  })
-
-  it('applies ANSI color when useColor is true', () => {
-    const renderer = new TerminalRenderer()
-    const matrix = makeSimpleMatrix()
-    const result = renderer.render(matrix, { useColor: true })
-
-    // ANSI: filled = \x1B[40m (black bg), empty = \x1B[47m (white bg), reset = \x1B[0m
-    expect(result).toContain('\x1B[40m')
-    expect(result).toContain('\x1B[47m')
-    expect(result).toContain('\x1B[0m')
-  })
-
-  it('handles empty matrix', () => {
-    const renderer = new TerminalRenderer()
-    const matrix: DotMatrix = {
-      data: [],
-      width: 0,
-      height: 0,
-      metadata: {
-        type: 'qrcode',
-        generatedAt: Date.now(),
-      },
-    }
-    const result = renderer.render(matrix)
-    expect(result).toBe('')
-  })
-
-  it('handles single row matrix', () => {
-    const renderer = new TerminalRenderer()
-    const matrix: DotMatrix = {
-      data: [[1, 0, 1]],
-      width: 3,
-      height: 1,
-      metadata: {
-        type: 'code128',
-        contentLength: 3,
-        generatedAt: Date.now(),
-      },
-    }
-    const result = renderer.render(matrix, { filledChar: '#', emptyChar: '.' })
-    expect(result).toBe('#.#')
-  })
-
   it('has correct name', () => {
     const renderer = new TerminalRenderer()
     expect(renderer.name).toBe('terminal')
+  })
+
+  it('renders via render method with full DotMatrix', () => {
+    const renderer = new TerminalRenderer()
+    const matrix = {
+      data: [
+        [1, 0, 1] as DotValue[],
+        [0, 1, 0] as DotValue[],
+        [1, 0, 1] as DotValue[],
+      ],
+      width: 3,
+      height: 3,
+      metadata: { type: 'qrcode' as const, generatedAt: Date.now() },
+    }
+    const result = renderer.render(matrix)
+    expect(result).toBe('▀▄▀\n▀ ▀')
+  })
+
+  it('passes options through', () => {
+    const renderer = new TerminalRenderer()
+    const matrix = {
+      data: [
+        [1, 0] as DotValue[],
+        [0, 1] as DotValue[],
+      ],
+      width: 2,
+      height: 2,
+      metadata: { type: 'qrcode' as const, generatedAt: Date.now() },
+    }
+    const result = renderer.render(matrix, { mode: 'ansi' })
+    expect(result).toContain('\x1B[40m')
   })
 })
