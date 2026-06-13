@@ -11,9 +11,11 @@ export type { TerminalRenderOptions } from '@lolicode/core'
 
 type DotValue = 0 | 1
 type DotMatrixData = DotValue[][]
-export type TerminalInput = CoreDotMatrix | DotMatrixData | CodeEncodeRequest
+type TerminalCodeType = Extract<EncodableCodeType, 'qrcode' | 'datamatrix' | 'pdf417' | 'aztec'>
+type TerminalCodeEncodeRequest = CodeEncodeRequest<TerminalCodeType>
+export type TerminalInput = CoreDotMatrix | DotMatrixData | TerminalCodeEncodeRequest
 
-export type TerminalCodeRenderOptions<TType extends EncodableCodeType = EncodableCodeType> = TerminalRenderOptions & {
+export type TerminalCodeRenderOptions<TType extends TerminalCodeType = TerminalCodeType> = TerminalRenderOptions & {
   type: TType
   encode?: CodeEncodeOptionsMap[TType]
 }
@@ -22,11 +24,12 @@ function isCoreDotMatrix(input: TerminalInput): input is CoreDotMatrix {
   return !Array.isArray(input) && 'data' in input && 'metadata' in input
 }
 
-function isCodeEncodeRequest(input: TerminalInput): input is CodeEncodeRequest {
+function isCodeEncodeRequest(input: TerminalInput): input is TerminalCodeEncodeRequest {
   return !Array.isArray(input) && 'type' in input && 'content' in input
 }
 
 function resolveInput(input: TerminalInput): CoreDotMatrix | DotMatrixData {
+  rejectLinearRequest(input)
   return isCodeEncodeRequest(input) ? encode(input) : input
 }
 
@@ -34,8 +37,32 @@ function getMatrixData(input: CoreDotMatrix | DotMatrixData): DotMatrixData {
   return isCoreDotMatrix(input) ? input.data : input
 }
 
-function isBarcodeMatrix(input: CoreDotMatrix | DotMatrixData): boolean {
-  return isCoreDotMatrix(input) && input.metadata.family === 'linear'
+function assertTerminalSupported(input: CoreDotMatrix | DotMatrixData): void {
+  if (isCoreDotMatrix(input) && input.metadata.family === 'linear') {
+    throw new Error('Terminal renderer does not support linear barcodes. Use a pixel renderer such as SVG, Canvas, or PNG.')
+  }
+}
+
+function rejectLinearRequest(input: unknown): void {
+  if (typeof input !== 'object' || input === null || Array.isArray(input) || !('type' in input))
+    return
+
+  const type = (input as { type: string }).type
+  if (
+    type === 'code128'
+    || type === 'code39'
+    || type === 'code93'
+    || type === 'codabar'
+    || type === 'gs1_128'
+    || type === 'msi'
+    || type === 'ean13'
+    || type === 'ean8'
+    || type === 'upca'
+    || type === 'upce'
+    || type === 'itf'
+  ) {
+    throw new Error('Terminal renderer does not support linear barcodes. Use a pixel renderer such as SVG, Canvas, or PNG.')
+  }
 }
 
 function addMargin(matrix: DotMatrixData, margin: number): DotMatrixData {
@@ -76,7 +103,8 @@ function renderUtf8(matrix: DotMatrixData, invert: boolean): string {
       let b = bottom !== undefined ? bottom[c] : 0
       if (invert) {
         t = t === 1 ? 0 : 1
-        b = b === 1 ? 0 : 1
+        if (bottom !== undefined)
+          b = b === 1 ? 0 : 1
       }
       if (t === 0 && b === 0)
         line += ' '
@@ -129,7 +157,8 @@ function renderSmall(matrix: DotMatrixData, invert: boolean): string {
       let b = bottom !== undefined ? bottom[c] : 0
       if (invert) {
         t = t === 1 ? 0 : 1
-        b = b === 1 ? 0 : 1
+        if (bottom !== undefined)
+          b = b === 1 ? 0 : 1
       }
       if (t === 1 && b === 1)
         line += '\x1B[40m\x1B[30m█\x1B[0m'
@@ -147,47 +176,9 @@ function renderSmall(matrix: DotMatrixData, invert: boolean): string {
   return rows.join('\n')
 }
 
-function fitColumns(row: DotValue[], maxWidth?: number): DotValue[] {
-  if (maxWidth === undefined || maxWidth <= 0 || row.length <= maxWidth)
-    return row
-
-  return Array.from({ length: maxWidth }, (_unused, index) => {
-    const start = Math.floor(index * row.length / maxWidth)
-    const end = Math.max(start + 1, Math.floor((index + 1) * row.length / maxWidth))
-    let filled = 0
-    for (let i = start; i < end; i++) {
-      if (row[i] === 1)
-        filled++
-    }
-    return filled * 2 >= end - start ? 1 : 0
-  })
-}
-
-function renderBars(matrix: DotMatrixData, invert: boolean, height: number, maxWidth?: number): string {
-  if (matrix.length === 0 || height <= 0)
-    return ''
-
-  const width = matrix[0].length
-  const projected: DotValue[] = []
-  for (let col = 0; col < width; col++) {
-    let filled = false
-    for (const row of matrix) {
-      if (row[col] === 1) {
-        filled = true
-        break
-      }
-    }
-    projected.push((invert ? !filled : filled) ? 1 : 0)
-  }
-
-  const fitted = fitColumns(projected, maxWidth)
-  const line = fitted.map(cell => cell === 1 ? '█' : ' ').join('')
-  return Array.from({ length: height }, () => line).join('\n')
-}
-
-export function renderTerminal<TType extends EncodableCodeType>(content: string, options: TerminalCodeRenderOptions<TType>): string
+export function renderTerminal<TType extends TerminalCodeType>(content: string, options: TerminalCodeRenderOptions<TType>): string
 export function renderTerminal(input: TerminalInput, options?: TerminalRenderOptions): string
-export function renderTerminal<TType extends EncodableCodeType>(
+export function renderTerminal<TType extends TerminalCodeType>(
   input: TerminalInput | string,
   options?: TerminalRenderOptions | TerminalCodeRenderOptions<TType>,
 ): string {
@@ -195,21 +186,23 @@ export function renderTerminal<TType extends EncodableCodeType>(
     throw new Error('Terminal code rendering requires a code type')
   }
 
+  if (typeof input === 'string')
+    rejectLinearRequest(options)
+
   const resolved = typeof input === 'string'
     ? encode({
         type: (options as TerminalCodeRenderOptions<TType>).type,
         content: input,
         options: (options as TerminalCodeRenderOptions<TType>).encode,
-      } as CodeEncodeRequest)
+      } as TerminalCodeEncodeRequest)
     : resolveInput(input)
+
+  assertTerminalSupported(resolved)
+
   const renderOptions = options as TerminalRenderOptions | undefined
-  const isBarcode = isBarcodeMatrix(resolved)
-  const intent = renderOptions?.intent ?? 'preview'
-  const mode = renderOptions?.mode ?? (isBarcode ? 'bars' : 'utf8')
+  const mode = renderOptions?.mode ?? 'utf8'
   const margin = renderOptions?.margin ?? 0
   const invert = renderOptions?.invert ?? false
-  const barHeight = renderOptions?.barHeight ?? (isBarcode && intent === 'preview' ? 4 : 6)
-  const maxWidth = renderOptions?.viewport?.maxWidth ?? renderOptions?.maxWidth ?? (isBarcode && intent === 'preview' ? 60 : undefined)
 
   const padded = addMargin(getMatrixData(resolved), margin)
 
@@ -220,7 +213,7 @@ export function renderTerminal<TType extends EncodableCodeType>(
       return renderAnsi(padded, invert)
     case 'small':
       return renderSmall(padded, invert)
-    case 'bars':
-      return renderBars(padded, invert, barHeight, maxWidth)
   }
+
+  throw new Error(`Unsupported terminal render mode: ${mode}`)
 }

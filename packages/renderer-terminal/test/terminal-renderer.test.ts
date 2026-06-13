@@ -93,80 +93,18 @@ describe('renderTerminal', () => {
     })
   })
 
-  describe('bars mode', () => {
-    it('renders a raw matrix as projected bars when requested', () => {
-      const result = renderTerminal([
-        [0, 1, 0, 1],
-        [0, 1, 0, 1],
-      ], { mode: 'bars', barHeight: 2 })
+  describe('matrix code input', () => {
+    it('encodes and renders a declarative matrix code request', () => {
+      const result = renderTerminal({ type: 'qrcode', content: 'Hello' })
 
-      expect(result).toBe(' █ █\n █ █')
-    })
-
-    it('uses bars mode by default for barcode DotMatrix input', () => {
-      const result = renderTerminal(code128('A'), { barHeight: 2 })
-
-      expect(result.split('\n')).toHaveLength(2)
       expect(result).toContain('█')
-      expect(result).not.toContain('▀')
-      expect(result).not.toContain('▄')
+      expect(result).toContain('\n')
     })
 
-    it('encodes and renders a declarative code request', () => {
-      const result = renderTerminal({ type: 'code128', content: 'Hello' })
-      const lines = result.split('\n')
+    it('encodes and renders matrix content with terminal options', () => {
+      const result = renderTerminal('Hello', { type: 'qrcode', mode: 'small' })
 
-      expect(lines).toHaveLength(4)
-      expect(lines.every(line => line.length <= 60)).toBe(true)
-      expect(result).toContain('█')
-    })
-
-    it('encodes and renders content with terminal options', () => {
-      const result = renderTerminal('Hello', { type: 'code128', barHeight: 2 })
-
-      expect(result.split('\n')).toHaveLength(2)
-      expect(result).toContain('█')
-      expect(result).not.toContain('▀')
-      expect(result).not.toContain('▄')
-    })
-
-    it('fits projected bars to a maximum terminal width', () => {
-      const result = renderTerminal(code128('Hello'), { barHeight: 2, maxWidth: 40 })
-      const lines = result.split('\n')
-
-      expect(lines).toHaveLength(2)
-      expect(lines.every(line => line.length <= 40)).toBe(true)
-      expect(result).toContain('█')
-    })
-
-    it('uses preview defaults for barcode width and height', () => {
-      const result = renderTerminal(code128('Hello'))
-      const lines = result.split('\n')
-
-      expect(lines).toHaveLength(4)
-      expect(lines.every(line => line.length <= 60)).toBe(true)
-      expect(result).not.toContain('▀')
-      expect(result).not.toContain('▄')
-    })
-
-    it('keeps barcode geometry unbounded for scan intent', () => {
-      const matrix = code128('Hello')
-      const result = renderTerminal(matrix, { intent: 'scan' })
-      const lines = result.split('\n')
-
-      expect(lines).toHaveLength(6)
-      expect(lines.every(line => line.length === matrix.width)).toBe(true)
-      expect(matrix.width).toBeGreaterThan(60)
-    })
-
-    it('uses viewport constraints before maxWidth', () => {
-      const result = renderTerminal(code128('Hello'), {
-        barHeight: 1,
-        maxWidth: 50,
-        viewport: { maxWidth: 32 },
-      })
-
-      expect(result.length).toBe(32)
+      expect(result).toContain('\x1B[')
     })
 
     it('keeps raw matrix input on utf8 mode by default', () => {
@@ -176,6 +114,20 @@ describe('renderTerminal', () => {
       ])
 
       expect(result).toBe('▀')
+    })
+
+    it('rejects linear barcode DotMatrix input', () => {
+      expect(() => renderTerminal(code128('A'))).toThrow('does not support linear barcodes')
+    })
+
+    it('rejects declarative linear barcode requests', () => {
+      // @ts-expect-error linear barcodes are intentionally unsupported by terminal rendering
+      expect(() => renderTerminal({ type: 'code128', content: 'A' })).toThrow('does not support linear barcodes')
+    })
+
+    it('rejects linear barcode string shorthand', () => {
+      // @ts-expect-error linear barcodes are intentionally unsupported by terminal rendering
+      expect(() => renderTerminal('A', { type: 'code128' })).toThrow('does not support linear barcodes')
     })
   })
 
@@ -227,6 +179,14 @@ describe('renderTerminal', () => {
       expect(renderTerminal(allZero)).toBe('  ')
       expect(renderTerminal(allZero, { invert: true })).toBe('██')
     })
+
+    it('does not invert the virtual bottom row for odd-height utf8 output', () => {
+      expect(renderTerminal([[0, 0]], { invert: true })).toBe('▀▀')
+    })
+
+    it('does not invert the virtual bottom row for odd-height small output', () => {
+      expect(renderTerminal([[0]], { invert: true, mode: 'small' })).toBe('\x1B[47m\x1B[30m▀\x1B[0m')
+    })
   })
 
   describe('edge cases', () => {
@@ -269,14 +229,9 @@ describe('terminalRenderer', () => {
     expect(result).toBe('▀▄▀\n▀ ▀')
   })
 
-  it('renders barcode matrices with barcode-aware defaults', () => {
+  it('rejects barcode matrices', () => {
     const renderer = new TerminalRenderer()
-    const result = renderer.render(code128('A'), { barHeight: 1 })
-
-    expect(result.split('\n')).toHaveLength(1)
-    expect(result).toContain('█')
-    expect(result).not.toContain('▀')
-    expect(result).not.toContain('▄')
+    expect(() => renderer.render(code128('A'))).toThrow('does not support linear barcodes')
   })
 
   it('passes options through', () => {

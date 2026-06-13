@@ -27,7 +27,7 @@
 
 ### 包职责边界
 
-`@lolicode/core` 是编码引擎层，负责把内容转换为带语义元数据的 `DotMatrix`。渲染器包是用户场景入口，负责把“内容 + 码制 + 渲染目标”编排成最终输出；例如 terminal 用户应能只引入 `@lolicode/renderer-terminal`，用 `renderTerminal('Hello', { type: 'code128' })` 完成编码和渲染。只有需要复用点阵、实现自定义渲染器或直接操作矩阵时，才需要直接使用 `@lolicode/core`。
+`@lolicode/core` 是编码引擎层，负责把内容转换为带语义元数据的 `DotMatrix`。渲染器包是用户场景入口，负责把“内容 + 码制 + 渲染目标”编排成最终输出；例如 terminal 用户应能只引入 `@lolicode/renderer-terminal`，用 `renderTerminal('Hello', { type: 'qrcode' })` 完成矩阵码编码和渲染。终端不是可靠的一维条码介质，`@lolicode/renderer-terminal` 不支持 `family: 'linear'` 的条码；一维条码应使用 SVG、Canvas、PNG 等像素/矢量渲染器。只有需要复用点阵、实现自定义渲染器或直接操作矩阵时，才需要直接使用 `@lolicode/core`。
 
 ---
 
@@ -415,25 +415,9 @@ export interface Renderer<TOutput, TOptions = object> {
 }
 
 /**
- * 渲染意图：scan 保留可扫描/精确几何，preview 优先适配展示介质
- */
-export type RenderIntent = 'scan' | 'preview'
-
-/**
- * 渲染视口约束
- */
-export interface RenderViewport {
-  maxWidth?: number
-  maxHeight?: number
-}
-
-/**
  * 所有渲染器共享的基础选项
  */
-export interface BaseRenderOptions {
-  intent?: RenderIntent
-  viewport?: RenderViewport
-}
+export interface BaseRenderOptions {}
 
 /**
  * Canvas 渲染选项
@@ -467,35 +451,32 @@ export interface SVGRenderOptions extends BaseRenderOptions {
  * 终端渲染选项
  */
 export interface TerminalRenderOptions extends BaseRenderOptions {
-  /** 渲染模式；完整一维条码 DotMatrix 默认 bars，其它矩阵默认 utf8 */
-  mode?: 'utf8' | 'ansi' | 'small' | 'bars'
+  /** 渲染模式，默认 utf8 */
+  mode?: 'utf8' | 'ansi' | 'small'
   /** 终端层附加空白边距 */
   margin?: number
   /** 是否反转填充和空白 */
   invert?: boolean
-  /** bars 模式输出高度；一维条码 preview 默认 4，scan 默认 6 */
-  barHeight?: number
-  /** bars 模式最大输出列数；优先使用 viewport.maxWidth */
-  maxWidth?: number
 }
 ```
 
-终端渲染器应优先接收完整 `DotMatrix`，以便根据 `metadata.family` 选择合适默认模式。二维码/Data Matrix/Aztec 等二维符号默认使用 `utf8` 半块压缩；一维条码默认使用 `bars`，将纵向重复的条码矩阵投影为固定高度的整块竖条，避免二维码式半块压缩在条码上下留白处生成 `▀`/`▄` 噪声。调用方传入裸 `DotValue[][]` 时，渲染器无法获知码制语义，因此只使用显式 `mode` 或默认 `utf8`。
+终端渲染器支持二维码/Data Matrix/PDF417/Aztec 等 `family: 'matrix'` 的二维码，默认使用 `utf8` 半块压缩。终端渲染器不支持 `family: 'linear'` 的一维条码；传入一维条码 `DotMatrix` 或声明式一维条码请求时必须抛出错误，提示调用方使用 SVG、Canvas、PNG 等像素/矢量渲染器。
 
-一维条码的精确宽度可能超过常见终端宽度，终端自动换行会破坏视觉结构。`intent` 是跨渲染器的高层策略：`preview` 允许终端 renderer 根据视口约束压缩为可读预览，默认把一维条码限制到 60 列和 4 行；`scan` 保留矩阵精确几何，不自动压缩。SVG、Canvas、PNG 等像素介质也应复用 `intent` 和 `viewport`，但默认优先保留精确几何。
+一维条码的横向模块比例是编码结果的一部分，终端字符、字体、字距、行高和自动换行都不能提供可靠的条码输出介质。终端包不提供条码调试预览、横向压缩或 bars 模式，避免 API 暗示终端可以生成可扫码条码。
 
 面向终端场景的入口接受三类输入：
 
 ```typescript
-type TerminalInput = DotMatrix | DotValue[][] | CodeEncodeRequest
+type TerminalCodeType = 'qrcode' | 'datamatrix' | 'pdf417' | 'aztec'
+type TerminalInput = DotMatrix | DotValue[][] | CodeEncodeRequest<TerminalCodeType>
 
-type TerminalCodeRenderOptions<TType extends EncodableCodeType = EncodableCodeType>
+type TerminalCodeRenderOptions<TType extends TerminalCodeType = TerminalCodeType>
   = TerminalRenderOptions & {
     type: TType
     encode?: CodeEncodeOptionsMap[TType]
   }
 
-renderTerminal('Hello', { type: 'code128' })
+renderTerminal('Hello', { type: 'qrcode' })
 renderTerminal({ type: 'qrcode', content: 'LOLI', options: { margin: 1 } })
 renderTerminal(prebuiltMatrix)
 ```
@@ -634,10 +615,6 @@ import { renderTerminal } from '@lolicode/renderer-terminal'
 console.log(renderTerminal('https://example.com', {
   type: 'qrcode',
   encode: { errorLevel: 'H', margin: 2 },
-}))
-
-console.log(renderTerminal('123456789', {
-  type: 'code128',
 }))
 ```
 

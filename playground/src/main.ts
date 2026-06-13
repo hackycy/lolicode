@@ -45,35 +45,3 @@ console.log(renderTerminal('test', { type: 'pdf417' }))
 
 section('Aztec Code')
 console.log(renderTerminal('ABC', { type: 'aztec' }))
-
-// ─── Barcodes ───────────────────────────────────────
-
-section('Code 128')
-console.log(renderTerminal('Hello', { type: 'code128' }))
-
-section('EAN-13')
-console.log(renderTerminal('590123412345', { type: 'ean13' }))
-
-section('EAN-8')
-console.log(renderTerminal('96385074', { type: 'ean8' }))
-
-section('UPC-A')
-console.log(renderTerminal('036000291452', { type: 'upca' }))
-
-section('UPC-E')
-console.log(renderTerminal('01234565', { type: 'upce' }))
-
-section('Code 39')
-console.log(renderTerminal('CODE39', { type: 'code39' }))
-
-section('ITF')
-console.log(renderTerminal('1234567890', { type: 'itf' }))
-
-section('Codabar')
-console.log(renderTerminal('A12345B', { type: 'codabar' }))
-
-section('GS1-128')
-console.log(renderTerminal('(01)09521234543213', { type: 'gs1_128' }))
-
-section('MSI Plessey')
-console.log(renderTerminal('12345', { type: 'msi' }))

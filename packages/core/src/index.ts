@@ -77,8 +77,6 @@ export type {
   QRCodeOptions,
   // 渲染器类型
   Renderer,
-  RenderIntent,
-  RenderViewport,
   SVGRenderOptions,
   TerminalRenderOptions,
 } from './types'
