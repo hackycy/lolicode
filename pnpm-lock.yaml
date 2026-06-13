@@ -125,6 +125,18 @@ importers:
 
   packages/core: {}
 
+  packages/renderer-canvas:
+    dependencies:
+      '@lolicode/core':
+        specifier: workspace:^
+        version: link:../core
+
+  packages/renderer-svg:
+    dependencies:
+      '@lolicode/core':
+        specifier: workspace:^
+        version: link:../core
+
   packages/renderer-terminal:
     dependencies:
       '@lolicode/core':
@@ -133,9 +145,25 @@ importers:
 
   playground:
     dependencies:
+      '@lolicode/core':
+        specifier: workspace:^
+        version: link:../packages/core
+      '@lolicode/renderer-canvas':
+        specifier: workspace:^
+        version: link:../packages/renderer-canvas
+      '@lolicode/renderer-svg':
+        specifier: workspace:^
+        version: link:../packages/renderer-svg
       '@lolicode/renderer-terminal':
         specifier: workspace:^
         version: link:../packages/renderer-terminal
+    devDependencies:
+      tsx:
+        specifier: catalog:cli
+        version: 4.21.0
+      vite:
+        specifier: catalog:cli
+        version: 7.3.2(@types/node@24.12.2)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
 
 packages:
 

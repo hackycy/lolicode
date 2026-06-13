@@ -1,0 +1,250 @@
+:root {
+  color: #172033;
+  background: #eef2f3;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  line-height: 1.4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  color: #f8fafc;
+  background: #183f3a;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  display: grid;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 8px;
+  background: #d7f171;
+  color: #183f3a;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+
+.brand p {
+  margin: 4px 0 0;
+  color: #c9d9d5;
+  font-size: 0.85rem;
+}
+
+.preset-list {
+  display: grid;
+  gap: 6px;
+}
+
+.preset-button {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #e6eeeb;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.preset-button:hover,
+.preset-button[aria-pressed="true"] {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 12%);
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: auto minmax(280px, 1fr) minmax(180px, 28vh);
+  gap: 16px;
+  padding: 20px;
+  min-width: 0;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(180px, 2fr) repeat(4, minmax(92px, 0.6fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.controls label {
+  display: grid;
+  gap: 6px;
+}
+
+.controls span {
+  color: #506070;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.controls input,
+.controls select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #cad4d8;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #172033;
+  background: #ffffff;
+}
+
+.controls input[type="color"] {
+  padding: 4px;
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-height: 0;
+}
+
+.preview-panel,
+.source-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #d4dde0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  border-bottom: 1px solid #e2e8ea;
+  padding: 0 14px;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.panel-header output {
+  color: #64717d;
+  font-size: 0.82rem;
+}
+
+.canvas-stage,
+.svg-stage {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  overflow: auto;
+  padding: 20px;
+  background:
+    linear-gradient(45deg, #f4f7f7 25%, transparent 25%),
+    linear-gradient(-45deg, #f4f7f7 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f4f7f7 75%),
+    linear-gradient(-45deg, transparent 75%, #f4f7f7 75%);
+  background-color: #ffffff;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+  background-size: 20px 20px;
+}
+
+canvas,
+.svg-stage svg {
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px solid #d4dde0;
+  background: #ffffff;
+  image-rendering: pixelated;
+}
+
+.source-panel pre {
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  padding: 14px;
+  color: #26364a;
+  background: #f8fafc;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@media (max-width: 920px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding: 16px;
+  }
+
+  .preset-list {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .preset-button {
+    text-align: center;
+  }
+
+  .workspace {
+    grid-template-rows: auto auto 240px;
+    padding: 16px;
+  }
+
+  .controls,
+  .preview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .preset-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

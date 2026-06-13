@@ -4,9 +4,19 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "tsx src/main.ts"
+    "build": "vite build",
+    "dev": "vite",
+    "start": "tsx src/node.ts",
+    "typecheck": "tsc"
   },
   "dependencies": {
+    "@lolicode/core": "workspace:^",
+    "@lolicode/renderer-canvas": "workspace:^",
+    "@lolicode/renderer-svg": "workspace:^",
     "@lolicode/renderer-terminal": "workspace:^"
+  },
+  "devDependencies": {
+    "tsx": "catalog:cli",
+    "vite": "catalog:cli"
   }
 }
