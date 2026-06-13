@@ -24,6 +24,10 @@ export abstract class BarcodeEncoder extends Encoder<BarcodeOptions> {
     return this.encodeToRuns(content).reduce((sum, run) => sum + run, 0)
   }
 
+  protected getDefaultQuietZone(): number {
+    return 10
+  }
+
   encodeSymbol(content: string): BarcodeSymbol {
     if (!this.validate(content)) {
       throw new Error(`Invalid content for ${this.getType()}: "${content}"`)
@@ -90,7 +94,7 @@ export abstract class BarcodeEncoder extends Encoder<BarcodeOptions> {
     const layout = {
       moduleWidth: options?.moduleWidth ?? 2,
       height: options?.height ?? 24,
-      quietZone: options?.quietZone ?? 10,
+      quietZone: options?.quietZone ?? this.getDefaultQuietZone(),
       verticalMargin: options?.verticalMargin ?? 1,
     }
 

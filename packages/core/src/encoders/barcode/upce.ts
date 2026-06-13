@@ -29,6 +29,39 @@ const G_ENCODINGS: string[] = [
   '0010111',
 ]
 
+const PARITY_PATTERNS: Record<number, string[]> = {
+  0: [
+    'EEEOOO',
+    'EEOEOO',
+    'EEOOEO',
+    'EEOOOE',
+    'EOEEOO',
+    'EOOEEO',
+    'EOOOEE',
+    'EOEOEO',
+    'EOEOOE',
+    'EOOEOE',
+  ],
+  1: [
+    'OOOEEE',
+    'OOEOEE',
+    'OOEEOE',
+    'OOEEEO',
+    'OEOOEE',
+    'OEEOOE',
+    'OEEEOO',
+    'OEOEOE',
+    'OEOEEO',
+    'OEEOEO',
+  ],
+}
+
+interface PreparedUPCE {
+  numberSystem: number
+  dataDigits: number[]
+  checkDigit: number
+}
+
 /**
  * UPC-E 编码器
  * UPC-E 是 UPC-A 的压缩形式，用于小型商品
@@ -44,19 +77,28 @@ export class UPCEncoder extends BarcodeEncoder {
     return 8
   }
 
+  protected getDefaultQuietZone(): number {
+    return 9
+  }
+
   validate(content: string): boolean {
-    if (!/^\d+$/.test(content))
+    if (!/^\d{6,8}$/.test(content))
       return false
-    return content.length >= 6 && content.length <= 8
+    try {
+      this.prepareDigits(content)
+      return true
+    }
+    catch {
+      return false
+    }
   }
 
   encodeToRuns(content: string): number[] {
-    const digits = this.prepareDigits(content)
-    const lastDigit = digits[digits.length - 1]
+    const prepared = this.prepareDigits(content)
 
-    // UPC-E 编码规则：根据最后一位数字决定每个数据位使用 L 或 G 编码
-    const encodingPattern = this.getEncodingPattern(lastDigit)
-    const dataDigits = digits.slice(0, 6)
+    // UPC-E 校验位不直接编码在数字中，而是由奇偶模式承载。
+    const encodingPattern = this.getEncodingPattern(prepared.numberSystem, prepared.checkDigit)
+    const dataDigits = prepared.dataDigits
 
     const bits: string[] = []
 
@@ -66,7 +108,7 @@ export class UPCEncoder extends BarcodeEncoder {
     // 6 位数据
     for (let i = 0; i < 6; i++) {
       const digit = dataDigits[i]
-      if (encodingPattern[i] === 'E') {
+      if (encodingPattern[i] === 'O') {
         bits.push(L_ENCODINGS[digit])
       }
       else {
@@ -80,67 +122,59 @@ export class UPCEncoder extends BarcodeEncoder {
     return this.bitsToModules(bits.join(''))
   }
 
-  private prepareDigits(content: string): number[] {
+  private prepareDigits(content: string): PreparedUPCE {
     const digits = content.split('').map(Number)
+    let numberSystem = 0
+    let dataDigits: number[]
+    let checkDigit: number | undefined
 
     if (digits.length === 6) {
-      // 需要计算校验位 - 先转换为 UPC-A 格式
-      const upcaDigits = this.expandToUPCA(digits)
-      const checkDigit = calculateEANCheckDigit(upcaDigits)
-      digits.push(checkDigit)
+      dataDigits = digits
     }
     else if (digits.length === 7) {
-      // 已有校验位
+      dataDigits = digits.slice(0, 6)
+      checkDigit = digits[6]
     }
-    else if (digits.length === 8) {
-      // 完整格式，取后 7 位
-      return digits.slice(1, 8)
+    else {
+      numberSystem = digits[0]
+      dataDigits = digits.slice(1, 7)
+      checkDigit = digits[7]
     }
 
-    return digits
+    if (numberSystem !== 0 && numberSystem !== 1)
+      throw new Error(`Invalid UPC-E number system: ${numberSystem}`)
+
+    const upcaDigits = this.expandToUPCA(numberSystem, dataDigits)
+    const expectedCheckDigit = calculateEANCheckDigit(upcaDigits)
+    if (checkDigit !== undefined && checkDigit !== expectedCheckDigit)
+      throw new Error(`Invalid UPC-E check digit: ${checkDigit}`)
+
+    return {
+      numberSystem,
+      dataDigits,
+      checkDigit: expectedCheckDigit,
+    }
   }
 
-  private expandToUPCA(digits: number[]): number[] {
-    // UPC-E 到 UPC-A 的转换
-    // digits: 6 位数据 + 1 位校验 = 7 位
-    // 展开规则基于校验位（第 7 位）
-    const checkDigit = digits[6]
-    const d = digits.slice(0, 6)
+  private expandToUPCA(numberSystem: number, digits: number[]): number[] {
+    const lastDigit = digits[5]
 
-    switch (checkDigit) {
+    switch (lastDigit) {
       case 0:
       case 1:
       case 2:
-        // 0 MMM 0000 0PP X (制造商 3 位, 产品 2 位)
-        return `0${d[0]}${d[1]}${d[2]}${checkDigit}00000${d[3]}${d[4]}`.split('').map(Number)
+        return `${numberSystem}${digits[0]}${digits[1]}${lastDigit}0000${digits[2]}${digits[3]}${digits[4]}`.split('').map(Number)
       case 3:
-        // 0 MMM 00000 PP X (制造商 3 位, 产品 2 位)
-        return `0${d[0]}${d[1]}${d[2]}00000${d[3]}${d[4]}`.split('').map(Number)
+        return `${numberSystem}${digits[0]}${digits[1]}${digits[2]}00000${digits[3]}${digits[4]}`.split('').map(Number)
       case 4:
-        // 0 MMMM 0000 P X (制造商 4 位, 产品 1 位)
-        return `0${d[0]}${d[1]}${d[2]}${d[3]}0000${d[4]}`.split('').map(Number)
+        return `${numberSystem}${digits[0]}${digits[1]}${digits[2]}${digits[3]}00000${digits[4]}`.split('').map(Number)
       default:
-        // 0 MMMMM 0000 P X (制造商 5 位, 产品 1 位)
-        return `0${d[0]}${d[1]}${d[2]}${d[3]}${d[4]}0000${d[5]}`.split('').map(Number)
+        return `${numberSystem}${digits[0]}${digits[1]}${digits[2]}${digits[3]}${digits[4]}0000${lastDigit}`.split('').map(Number)
     }
   }
 
-  private getEncodingPattern(lastDigit: number): string[] {
-    // 根据最后一位数字选择编码模式
-    // E = L 编码, G = G 编码
-    const patterns: string[][] = [
-      ['E', 'E', 'E', 'O', 'O', 'O'], // 0
-      ['E', 'E', 'O', 'E', 'O', 'O'], // 1
-      ['E', 'E', 'O', 'O', 'E', 'O'], // 2
-      ['E', 'E', 'O', 'O', 'O', 'E'], // 3
-      ['E', 'O', 'E', 'E', 'O', 'O'], // 4
-      ['E', 'O', 'O', 'E', 'E', 'O'], // 5
-      ['E', 'O', 'O', 'O', 'E', 'E'], // 6
-      ['E', 'O', 'E', 'O', 'E', 'O'], // 7
-      ['E', 'O', 'E', 'O', 'O', 'E'], // 8
-      ['E', 'O', 'O', 'E', 'O', 'E'], // 9
-    ]
-    return patterns[lastDigit] || patterns[0]
+  private getEncodingPattern(numberSystem: number, checkDigit: number): string {
+    return PARITY_PATTERNS[numberSystem][checkDigit]
   }
 
   private bitsToModules(bitStr: string): number[] {

@@ -144,7 +144,7 @@ export class ITFEncoder extends BarcodeEncoder {
     }
 
     // 终止条：宽条-窄空-窄条
-    modules.push(3, 1, 1)
+    modules.push(2, 1, 1)
 
     return modules
   }

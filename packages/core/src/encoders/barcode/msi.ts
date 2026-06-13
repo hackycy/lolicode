@@ -41,27 +41,17 @@ export class MSIEncoder extends BarcodeEncoder {
     const checkDigit = this.calculateMod10Check(content)
     const fullContent = content + checkDigit
 
-    const modules: number[] = []
-
-    // 起始条（宽条，2 模块）
-    modules.push(2)
+    let bits = '110'
 
     // 数据位
     for (let i = 0; i < fullContent.length; i++) {
       const digit = Number.parseInt(fullContent[i])
-      const pattern = MSI_PATTERNS[digit]
-
-      // 将条空模式转换为模块序列
-      for (let j = 0; j < pattern.length; j++) {
-        modules.push(pattern[j] === '1' ? 1 : 0)
-      }
+      bits += MSI_PATTERNS[digit]
     }
 
-    // 终止条（窄空-宽条）
-    modules.push(1)
-    modules.push(2)
+    bits += '1001'
 
-    return this.normalizeModules(modules)
+    return this.bitsToModules(bits)
   }
 
   private calculateMod10Check(content: string): string {
@@ -87,19 +77,18 @@ export class MSIEncoder extends BarcodeEncoder {
     return checkDigit.toString()
   }
 
-  private normalizeModules(modules: number[]): number[] {
-    // 合并相邻的相同类型模块
+  private bitsToModules(bits: string): number[] {
     const result: number[] = []
-    let current = modules[0]
+    let current = bits[0]
     let count = 1
 
-    for (let i = 1; i < modules.length; i++) {
-      if (modules[i] === current) {
+    for (let i = 1; i < bits.length; i++) {
+      if (bits[i] === current) {
         count++
       }
       else {
         result.push(count)
-        current = modules[i]
+        current = bits[i]
         count = 1
       }
     }

@@ -71,6 +71,10 @@ export class EAN13Encoder extends BarcodeEncoder {
     return 13
   }
 
+  protected getDefaultQuietZone(): number {
+    return 11
+  }
+
   validate(content: string): boolean {
     return isValidEAN13(content)
   }

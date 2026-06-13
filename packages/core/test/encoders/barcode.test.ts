@@ -48,6 +48,12 @@ describe('code128Encoder', () => {
     expect(symbol.metadata.family).toBe('linear')
   })
 
+  it('uses the complete 13-module stop symbol', () => {
+    const runs = encoder.encodeToRuns('A')
+    expect(runs.slice(-7)).toEqual([2, 3, 3, 1, 1, 1, 2])
+    expect(runs.reduce((sum, run) => sum + run, 0)).toBe(46)
+  })
+
   it('uses independent barcode layout defaults', () => {
     const result = encoder.encode('ABC123')
     expect(result.height).toBe(26)
@@ -98,6 +104,7 @@ describe('code39Encoder', () => {
 
   it('rejects invalid chars', () => {
     expect(encoder.validate('abc@123')).toBe(false)
+    expect(encoder.validate('ABC*123')).toBe(false)
   })
 
   it('encodes to valid matrix', () => {
@@ -122,6 +129,7 @@ describe('eAN13Encoder', () => {
   it('validates 12-13 digit strings', () => {
     expect(encoder.validate('400638133393')).toBe(true)
     expect(encoder.validate('4006381333931')).toBe(true)
+    expect(encoder.validate('4006381333932')).toBe(false)
     expect(encoder.validate('12345')).toBe(false)
   })
 
@@ -136,6 +144,11 @@ describe('eAN13Encoder', () => {
     const result = encoder.encode('4006381333931')
     expect(result.metadata.type).toBe('ean13')
     isValidBarcodeMatrix(result)
+  })
+
+  it('uses the EAN-13 default quiet zone', () => {
+    const result = encoder.encode('400638133393')
+    expect(result.width).toBe((encoder.getModuleCount('400638133393') + 22) * 2)
   })
 
   it('ean13 convenience function works', () => {
@@ -161,6 +174,10 @@ describe('iTFEncoder', () => {
     const result = encoder.encode('1234567890')
     expect(result.metadata.type).toBe('itf')
     isValidBarcodeMatrix(result)
+  })
+
+  it('uses the ITF stop pattern with the same wide width as digit patterns', () => {
+    expect(encoder.encodeToRuns('12').slice(-3)).toEqual([2, 1, 1])
   })
 
   it('itf convenience function works', () => {

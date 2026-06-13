@@ -3,6 +3,7 @@ import { BarcodeEncoder } from './base'
 
 // Code 93 字符集定义
 const CODE93_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%'
+const CODE93_FULL_CHAR_COUNT = 47
 
 // Code 93 编码表（每个字符的 9 位条空模式）
 const CODE93_PATTERNS: string[] = [
@@ -27,6 +28,7 @@ const CODE93_PATTERNS: string[] = [
   '101100010',
   '100110100',
   '100011010',
+  '101011000',
   '101001100',
   '101000110',
   '100101100',
@@ -52,11 +54,9 @@ const CODE93_PATTERNS: string[] = [
   '111011010',
   '111010110',
   '100110010',
-  '101011110',
 ]
 
-// Code 93 起始和终止字符
-const START_STOP = '*'
+const START_STOP_PATTERN = '101011110'
 
 /**
  * Code 93 编码器
@@ -85,15 +85,20 @@ export class Code93Encoder extends BarcodeEncoder {
   }
 
   encodeToRuns(content: string): number[] {
-    // 计算校验字符
-    const checkC = this.calculateCheckC(content)
-    const checkK = this.calculateCheckK(content + checkC)
+    const dataValues = this.getDataValues(content)
+    const checkC = this.calculateCheck(dataValues, 20)
+    const checkK = this.calculateCheck([...dataValues, checkC], 15)
 
-    const fullContent = `${START_STOP}${content}${checkC}${checkK}${START_STOP}`
     const modules: number[] = []
+    const patterns = [
+      START_STOP_PATTERN,
+      ...dataValues.map(value => CODE93_PATTERNS[value]),
+      CODE93_PATTERNS[checkC],
+      CODE93_PATTERNS[checkK],
+      START_STOP_PATTERN,
+    ]
 
-    for (const char of fullContent) {
-      const pattern = this.getCharPattern(char)
+    for (const pattern of patterns) {
       for (const bit of pattern) {
         modules.push(bit === '1' ? 1 : 0)
       }
@@ -105,43 +110,24 @@ export class Code93Encoder extends BarcodeEncoder {
     return this.convertToBarSpace(modules)
   }
 
-  private getCharPattern(char: string): string {
-    if (char === '*') {
-      // 起始/终止字符
-      return '101100100'
+  private getDataValues(content: string): number[] {
+    const values: number[] = []
+    for (let i = 0; i < content.length; i++) {
+      const value = CODE93_CHARS.indexOf(content[i])
+      if (value === -1)
+        throw new Error(`Invalid Code 93 character: ${content[i]}`)
+      values.push(value)
     }
-
-    const index = CODE93_CHARS.indexOf(char)
-    if (index === -1) {
-      throw new Error(`Invalid Code 93 character: ${char}`)
-    }
-    return CODE93_PATTERNS[index]
+    return values
   }
 
-  private calculateCheckC(content: string): string {
+  private calculateCheck(values: number[], maxWeight: number): number {
     let sum = 0
-    const weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-
-    for (let i = 0; i < content.length; i++) {
-      const charIndex = CODE93_CHARS.indexOf(content[i])
-      const weightIndex = (content.length - 1 - i) % weights.length
-      sum += charIndex * weights[weightIndex]
+    for (let i = 0; i < values.length; i++) {
+      const weight = ((values.length - 1 - i) % maxWeight) + 1
+      sum += values[i] * weight
     }
-
-    return CODE93_CHARS[sum % 47]
-  }
-
-  private calculateCheckK(content: string): string {
-    let sum = 0
-    const weights = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-
-    for (let i = 0; i < content.length; i++) {
-      const charIndex = CODE93_CHARS.indexOf(content[i])
-      const weightIndex = (content.length - 1 - i) % weights.length
-      sum += charIndex * weights[weightIndex]
-    }
-
-    return CODE93_CHARS[sum % 47]
+    return sum % CODE93_FULL_CHAR_COUNT
   }
 
   private convertToBarSpace(bitModules: number[]): number[] {

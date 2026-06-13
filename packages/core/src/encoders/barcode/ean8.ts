@@ -44,6 +44,10 @@ export class EAN8Encoder extends BarcodeEncoder {
     return 8
   }
 
+  protected getDefaultQuietZone(): number {
+    return 7
+  }
+
   validate(content: string): boolean {
     return isValidEAN8(content)
   }

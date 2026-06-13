@@ -18,27 +18,32 @@ describe('gs1_128Encoder', () => {
     expect(encoder.getType()).toBe('gs1_128')
   })
 
-  it('validates numeric content', () => {
-    expect(encoder.validate('00012345678905')).toBe(true)
-    expect(encoder.validate('1234567890')).toBe(true)
+  it('validates plain AI element strings', () => {
+    expect(encoder.validate('0100012345678905')).toBe(true)
+    expect(encoder.validate('00012345678905')).toBe(false)
+    expect(encoder.validate('1234567890')).toBe(false)
   })
 
   it('validates AI bracket format', () => {
     expect(encoder.validate('(01)00012345678905')).toBe(true)
-    expect(encoder.validate('(10)ABC123')).toBe(false) // non-digit
+    expect(encoder.validate('(10)ABC123')).toBe(true)
+    expect(encoder.validate('(17)260101(10)ABC123')).toBe(true)
+    expect(encoder.validate('(01)123')).toBe(false)
   })
 
   it('rejects empty content', () => {
     expect(encoder.validate('')).toBe(false)
   })
 
-  it('rejects non-digit characters', () => {
+  it('rejects invalid element strings', () => {
     expect(encoder.validate('abc')).toBe(false)
     expect(encoder.validate('123a456')).toBe(false)
+    expect(encoder.validate('()')).toBe(false)
+    expect(encoder.validate('(99)123')).toBe(false)
   })
 
   it('encodes to valid matrix', () => {
-    const result = encoder.encode('00012345678905')
+    const result = encoder.encode('0100012345678905')
     expect(result.metadata.type).toBe('gs1_128')
     isValidBarcodeMatrix(result)
   })
@@ -50,15 +55,20 @@ describe('gs1_128Encoder', () => {
   })
 
   it('produces consistent output', () => {
-    const a = encoder.encode('1234567890')
-    const b = encoder.encode('1234567890')
+    const a = encoder.encode('(01)00012345678905')
+    const b = encoder.encode('(01)00012345678905')
     expect(a.data).toEqual(b.data)
   })
 
   it('different inputs produce different output', () => {
-    const a = encoder.encode('1234567890')
-    const b = encoder.encode('9876543210')
+    const a = encoder.encode('(01)00012345678905')
+    const b = encoder.encode('(01)00012345678912')
     expect(a.data).not.toEqual(b.data)
+  })
+
+  it('uses the full Code 128 stop pattern', () => {
+    const runs = encoder.encodeToRuns('(01)00012345678905')
+    expect(runs.slice(-7)).toEqual([2, 3, 3, 1, 1, 1, 2])
   })
 
   it('throws on invalid content', () => {

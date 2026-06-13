@@ -160,8 +160,12 @@ describe('validation utils', () => {
   describe('isValidEAN13', () => {
     it('accepts 12-13 digit strings', () => {
       expect(isValidEAN13('123456789012')).toBe(true)
-      expect(isValidEAN13('1234567890123')).toBe(true)
+      expect(isValidEAN13('4006381333931')).toBe(true)
       expect(isValidEAN13('12345')).toBe(false)
+    })
+
+    it('rejects invalid provided check digits', () => {
+      expect(isValidEAN13('4006381333932')).toBe(false)
     })
   })
 

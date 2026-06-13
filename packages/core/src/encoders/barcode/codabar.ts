@@ -45,20 +45,26 @@ export class CodabarEncoder extends BarcodeEncoder {
   }
 
   validate(content: string): boolean {
-    if (content.length === 0 || content.length > this.getMaxLength())
+    if (content.length < 3 || content.length > this.getMaxLength())
       return false
-    for (let i = 0; i < content.length; i++) {
-      if (!CODABAR_CHARS.includes(content[i]))
+    const normalized = content.toUpperCase()
+    if (!this.isStartStop(normalized[0]) || !this.isStartStop(normalized[normalized.length - 1]))
+      return false
+    for (let i = 0; i < normalized.length; i++) {
+      if (!CODABAR_CHARS.includes(normalized[i]))
+        return false
+      if (i > 0 && i < normalized.length - 1 && this.isStartStop(normalized[i]))
         return false
     }
     return true
   }
 
   encodeToRuns(content: string): number[] {
+    const normalized = content.toUpperCase()
     const modules: number[] = []
 
-    for (let i = 0; i < content.length; i++) {
-      const char = content[i]
+    for (let i = 0; i < normalized.length; i++) {
+      const char = normalized[i]
       const pattern = CODABAR_PATTERNS[CODABAR_CHARS.indexOf(char)]
 
       // 将条空模式转换为模块序列
@@ -67,12 +73,16 @@ export class CodabarEncoder extends BarcodeEncoder {
       }
 
       // 字符间窄空间隔
-      if (i < content.length - 1) {
-        modules.push(1)
+      if (i < normalized.length - 1) {
+        modules.push(0)
       }
     }
 
     return this.normalizeModules(modules)
+  }
+
+  private isStartStop(char: string): boolean {
+    return char === 'A' || char === 'B' || char === 'C' || char === 'D'
   }
 
   private normalizeModules(modules: number[]): number[] {

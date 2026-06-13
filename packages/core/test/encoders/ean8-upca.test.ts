@@ -23,6 +23,7 @@ describe('eAN8Encoder', () => {
   it('validates 7-8 digit strings', () => {
     expect(encoder.validate('1234567')).toBe(true)
     expect(encoder.validate('12345670')).toBe(true)
+    expect(encoder.validate('12345671')).toBe(false)
     expect(encoder.validate('12345')).toBe(false)
     expect(encoder.validate('')).toBe(false)
     expect(encoder.validate('123456789')).toBe(false)
@@ -52,6 +53,11 @@ describe('eAN8Encoder', () => {
     expect(result.width).toBe(67)
   })
 
+  it('uses the EAN-8 default quiet zone', () => {
+    const result = encoder.encode('9638507')
+    expect(result.width).toBe((encoder.getModuleCount('9638507') + 14) * 2)
+  })
+
   it('ean8 convenience function works', () => {
     const result = ean8('9638507')
     expect(result.metadata.type).toBe('ean8')
@@ -72,6 +78,7 @@ describe('uPCAEncoder', () => {
   it('validates 11-12 digit strings', () => {
     expect(encoder.validate('03600029145')).toBe(true)
     expect(encoder.validate('036000291452')).toBe(true)
+    expect(encoder.validate('036000291453')).toBe(false)
     expect(encoder.validate('12345')).toBe(false)
     expect(encoder.validate('')).toBe(false)
   })
@@ -98,6 +105,11 @@ describe('uPCAEncoder', () => {
   it('has correct logical width when rendered without quiet zone scaling', () => {
     const result = encoder.encode('03600029145', { moduleWidth: 1, quietZone: 0, verticalMargin: 0 })
     expect(result.width).toBe(95)
+  })
+
+  it('uses the UPC-A default quiet zone', () => {
+    const result = encoder.encode('03600029145')
+    expect(result.width).toBe((encoder.getModuleCount('03600029145') + 18) * 2)
   })
 
   it('upca convenience function works', () => {

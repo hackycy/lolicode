@@ -110,7 +110,7 @@ const CODE128_PATTERNS: number[][] = [
   [2, 1, 1, 4, 1, 2], // 103 (START A)
   [2, 1, 1, 2, 1, 4], // 104 (START B)
   [2, 1, 1, 2, 3, 2], // 105 (START C)
-  [2, 3, 3, 1, 1, 1], // 106 (STOP, 7 modules)
+  [2, 3, 3, 1, 1, 1, 2], // 106 (STOP)
 ]
 
 // Code 128 子集定义
@@ -151,11 +151,10 @@ export class Code128Encoder extends BarcodeEncoder {
     const modules: number[] = []
     for (const code of allCodes) {
       const pattern = CODE128_PATTERNS[code]
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < pattern.length; i++) {
         modules.push(pattern[i])
       }
     }
-    // STOP 码最后一个条是 2 模块宽，已在模式中处理
     return modules
   }
 

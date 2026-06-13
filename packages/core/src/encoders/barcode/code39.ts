@@ -68,9 +68,11 @@ export class Code39Encoder extends BarcodeEncoder {
   }
 
   validate(content: string): boolean {
+    const normalized = content.toUpperCase()
     return content.length > 0
       && content.length <= this.getMaxLength()
-      && isValidCode39(content.toUpperCase())
+      && !normalized.includes('*')
+      && isValidCode39(normalized)
   }
 
   encodeToRuns(content: string): number[] {

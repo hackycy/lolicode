@@ -14,6 +14,16 @@ function isValidBarcodeMatrix(result: { data: number[][], width: number, height:
   }
 }
 
+function runsToBits(runs: number[]): string {
+  let isBar = true
+  let bits = ''
+  for (const run of runs) {
+    bits += (isBar ? '1' : '0').repeat(run)
+    isBar = !isBar
+  }
+  return bits
+}
+
 describe('uPCEncoder', () => {
   const encoder = new UPCEncoder()
 
@@ -23,8 +33,9 @@ describe('uPCEncoder', () => {
 
   it('validates 6-8 digit strings', () => {
     expect(encoder.validate('012345')).toBe(true)
-    expect(encoder.validate('0123456')).toBe(true)
-    expect(encoder.validate('01234567')).toBe(true)
+    expect(encoder.validate('01234565')).toBe(true)
+    expect(encoder.validate('00123457')).toBe(true)
+    expect(encoder.validate('0123456')).toBe(false)
     expect(encoder.validate('12345')).toBe(false)
     expect(encoder.validate('')).toBe(false)
   })
@@ -44,6 +55,11 @@ describe('uPCEncoder', () => {
   it('has correct logical width when rendered without quiet zone scaling', () => {
     const result = encoder.encode('012345', { moduleWidth: 1, quietZone: 0, verticalMargin: 0 })
     expect(result.width).toBe(51)
+  })
+
+  it('uses the UPC-E default quiet zone', () => {
+    const result = encoder.encode('012345')
+    expect(result.width).toBe((encoder.getModuleCount('012345') + 18) * 2)
   })
 })
 
@@ -66,6 +82,16 @@ describe('code93Encoder', () => {
     isValidBarcodeMatrix(result)
   })
 
+  it('uses the Code 93 start and stop pattern with termination bar', () => {
+    const runs = encoder.encodeToRuns('0')
+    expect(runs.slice(0, 6)).toEqual([1, 1, 1, 1, 4, 1])
+    expect(runs.reduce((sum, run) => sum + run, 0)).toBe(46)
+  })
+
+  it('uses the standard Code 93 pattern table for data characters', () => {
+    expect(runsToBits(encoder.encodeToRuns('L')).slice(0, 18)).toBe('101011110101011000')
+  })
+
   it('produces consistent output', () => {
     const a = encoder.encode('TEST')
     const b = encoder.encode('TEST')
@@ -86,7 +112,8 @@ describe('codabarEncoder', () => {
 
   it('validates valid characters', () => {
     expect(encoder.validate('A12345B')).toBe(true)
-    expect(encoder.validate('123456')).toBe(true)
+    expect(encoder.validate('123456')).toBe(false)
+    expect(encoder.validate('A12B45C')).toBe(false)
     expect(encoder.validate('')).toBe(false)
   })
 
@@ -97,8 +124,8 @@ describe('codabarEncoder', () => {
   })
 
   it('produces consistent output', () => {
-    const a = encoder.encode('123456')
-    const b = encoder.encode('123456')
+    const a = encoder.encode('A123456B')
+    const b = encoder.encode('A123456B')
     expect(a.data).toEqual(b.data)
   })
 

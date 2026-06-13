@@ -23,21 +23,27 @@ export function isNumericString(content: string): boolean {
  * 验证 EAN-13 格式（12 或 13 位数字）
  */
 export function isValidEAN13(content: string): boolean {
-  return /^\d{12,13}$/.test(content)
+  if (!/^\d{12,13}$/.test(content))
+    return false
+  return hasValidOptionalEANCheckDigit(content, 13)
 }
 
 /**
  * 验证 EAN-8 格式（7 或 8 位数字）
  */
 export function isValidEAN8(content: string): boolean {
-  return /^\d{7,8}$/.test(content)
+  if (!/^\d{7,8}$/.test(content))
+    return false
+  return hasValidOptionalEANCheckDigit(content, 8)
 }
 
 /**
  * 验证 UPC-A 格式（11 或 12 位数字）
  */
 export function isValidUPCA(content: string): boolean {
-  return /^\d{11,12}$/.test(content)
+  if (!/^\d{11,12}$/.test(content))
+    return false
+  return hasValidOptionalEANCheckDigit(content, 12)
 }
 
 /**
@@ -68,4 +74,13 @@ export function calculateEANCheckDigit(digits: number[]): number {
   }
   const remainder = sum % 10
   return remainder === 0 ? 0 : 10 - remainder
+}
+
+function hasValidOptionalEANCheckDigit(content: string, fullLength: number): boolean {
+  if (content.length !== fullLength)
+    return true
+
+  const digits = content.split('').map(Number)
+  const checkDigit = digits[digits.length - 1]
+  return calculateEANCheckDigit(digits.slice(0, -1)) === checkDigit
 }

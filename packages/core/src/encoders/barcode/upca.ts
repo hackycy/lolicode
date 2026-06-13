@@ -44,6 +44,10 @@ export class UPCAEncoder extends BarcodeEncoder {
     return 12
   }
 
+  protected getDefaultQuietZone(): number {
+    return 9
+  }
+
   validate(content: string): boolean {
     return isValidUPCA(content)
   }
