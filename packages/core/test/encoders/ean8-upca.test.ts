@@ -66,6 +66,10 @@ describe('eAN8Encoder', () => {
   it('throws on invalid content', () => {
     expect(() => encoder.encode('123')).toThrow()
   })
+
+  it('throws on unsupported includeChecksum option', () => {
+    expect(() => encoder.encode('9638507', { includeChecksum: false } as never)).toThrow('EAN includeChecksum option is not supported')
+  })
 })
 
 describe('uPCAEncoder', () => {
@@ -119,5 +123,9 @@ describe('uPCAEncoder', () => {
 
   it('throws on invalid content', () => {
     expect(() => encoder.encode('123')).toThrow()
+  })
+
+  it('throws on unsupported includeChecksum option', () => {
+    expect(() => encoder.encode('03600029145', { includeChecksum: false } as never)).toThrow('EAN includeChecksum option is not supported')
   })
 })

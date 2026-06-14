@@ -98,6 +98,12 @@ describe('encoding utils', () => {
     it('encodes ASCII', () => {
       expect(getBytes('ABC')).toEqual([65, 66, 67])
     })
+
+    it('matches standard UTF-8 encoding for surrogate edge cases', () => {
+      expect(getBytes('😀')).toEqual(Array.from(new TextEncoder().encode('😀')))
+      expect(getBytes('\uD800')).toEqual(Array.from(new TextEncoder().encode('\uD800')))
+      expect(getBytes('\uDC00')).toEqual(Array.from(new TextEncoder().encode('\uDC00')))
+    })
   })
 
   describe('isNumeric', () => {

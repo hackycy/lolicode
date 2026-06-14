@@ -91,6 +91,9 @@ export abstract class BarcodeEncoder extends Encoder<BarcodeOptions> {
   }
 
   private normalizeLayout(options?: BarcodeOptions): Required<Pick<BarcodeOptions, 'height' | 'moduleWidth' | 'quietZone' | 'verticalMargin'>> {
+    if ((options as { showText?: unknown } | undefined)?.showText !== undefined)
+      throw new Error('Barcode showText option is not supported by core matrix encoders')
+
     const layout = {
       moduleWidth: options?.moduleWidth ?? 2,
       height: options?.height ?? 24,

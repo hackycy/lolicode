@@ -1,4 +1,4 @@
-import type { CodeType } from '../../types'
+import type { CodeType, DotMatrix, ITFOptions } from '../../types'
 import { isValidITF } from '../../utils/validation'
 import { BarcodeEncoder } from './base'
 
@@ -125,9 +125,17 @@ export class ITFEncoder extends BarcodeEncoder {
     return isValidITF(content) && content.length <= this.getMaxLength()
   }
 
+  encode(content: string, options?: ITFOptions): DotMatrix {
+    if ((options as { wideToNarrowRatio?: unknown } | undefined)?.wideToNarrowRatio !== undefined)
+      throw new Error('ITF wideToNarrowRatio option is not supported')
+    return super.encode(content, options)
+  }
+
   encodeToRuns(content: string): number[] {
-    // 确保偶数位
-    const paddedContent = content.length % 2 === 0 ? content : `0${content}`
+    if (!this.validate(content))
+      throw new Error(`Invalid content for ${this.getType()}: "${content}"`)
+
+    const paddedContent = content
 
     const modules: number[] = []
 

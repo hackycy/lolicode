@@ -66,10 +66,6 @@ import { encode } from '@lolicode/core'
 const matrix = encode({
   type: 'ean13',
   content: '5901234123457',
-  options: {
-    includeChecksum: true,
-    showText: true,
-  },
 })
 ```
 
@@ -137,7 +133,6 @@ qr('LOLICODE', {
   margin: 4,
   version: 4,
   errorLevel: 'Q',
-  maskPattern: 2,
   mode: 'alphanumeric',
 })
 ```
@@ -147,7 +142,6 @@ qr('LOLICODE', {
 | `margin` | Quiet zone in modules. Defaults to `4`. |
 | `version` | QR version from `1` to `40`. Omit for automatic selection. |
 | `errorLevel` | Error correction level: `L`, `M`, `Q`, or `H`. Defaults to `M`. |
-| `maskPattern` | QR mask pattern from `0` to `7`. Omit for automatic selection. |
 | `mode` | Encoding mode: `numeric`, `alphanumeric`, or `byte`. Omit for automatic selection. |
 
 ### Linear Barcodes
@@ -158,7 +152,6 @@ code128('ABC-123', {
   height: 32,
   quietZone: 10,
   verticalMargin: 1,
-  showText: true,
 })
 ```
 
@@ -168,7 +161,6 @@ code128('ABC-123', {
 | `height` | Bar body height in rows. |
 | `quietZone` | Left and right quiet zone width. |
 | `verticalMargin` | Top and bottom whitespace height. |
-| `showText` | Reserves text rows when supported by the encoder. |
 
 ## Utilities
 

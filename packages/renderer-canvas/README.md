@@ -24,7 +24,6 @@ renderCanvas('5901234123457', {
   target: canvas,
   moduleSize: 3,
   encode: {
-    includeChecksum: true,
     quietZone: 12,
     height: 40,
   },

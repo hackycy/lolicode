@@ -1,4 +1,4 @@
-import type { CodeType } from '../../types'
+import type { Code128Options, CodeType, DotMatrix } from '../../types'
 import { BarcodeEncoder } from './base'
 
 // Code 128 编码表：每个符号的条空模式（6个元素：3条+3空）
@@ -141,6 +141,12 @@ export class Code128Encoder extends BarcodeEncoder {
         return false
     }
     return true
+  }
+
+  encode(content: string, options?: Code128Options): DotMatrix {
+    if ((options as { subset?: unknown } | undefined)?.subset !== undefined)
+      throw new Error('Code 128 subset option is not supported')
+    return super.encode(content, options)
   }
 
   encodeToRuns(content: string): number[] {

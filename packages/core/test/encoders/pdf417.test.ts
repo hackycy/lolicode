@@ -28,6 +28,20 @@ describe('pDF417Encoder', () => {
     }
   })
 
+  it('uses the standard PDF417 start pattern and option-controlled dimensions', () => {
+    const result = encoder.encode('HELLO', { columns: 3, rows: 5, securityLevel: 2 })
+    expect(result.width).toBe(120)
+    expect(result.height).toBe(15)
+    expect(result.data[0].slice(0, 17).join('')).toBe('11111111010101000')
+  })
+
+  it('throws on invalid options', () => {
+    expect(() => encoder.encode('HELLO', { columns: 0 })).toThrow('Invalid PDF417 columns')
+    expect(() => encoder.encode('HELLO', { rows: 91 })).toThrow('Invalid PDF417 rows')
+    expect(() => encoder.encode('HELLO', { securityLevel: 9 })).toThrow('Invalid PDF417 securityLevel')
+    expect(() => encoder.encode('HELLO', { aspectRatio: 3 } as never)).toThrow('PDF417 aspectRatio option is not supported')
+  })
+
   it('produces consistent output', () => {
     const a = encoder.encode('TEST')
     const b = encoder.encode('TEST')

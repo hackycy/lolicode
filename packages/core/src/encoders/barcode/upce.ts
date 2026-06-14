@@ -1,4 +1,4 @@
-import type { CodeType } from '../../types'
+import type { CodeType, DotMatrix, EANOptions } from '../../types'
 import { calculateEANCheckDigit } from '../../utils/validation'
 import { BarcodeEncoder } from './base'
 
@@ -91,6 +91,12 @@ export class UPCEncoder extends BarcodeEncoder {
     catch {
       return false
     }
+  }
+
+  encode(content: string, options?: EANOptions): DotMatrix {
+    if ((options as { includeChecksum?: unknown } | undefined)?.includeChecksum !== undefined)
+      throw new Error('EAN includeChecksum option is not supported')
+    return super.encode(content, options)
   }
 
   encodeToRuns(content: string): number[] {

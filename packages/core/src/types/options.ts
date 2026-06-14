@@ -18,8 +18,6 @@ export interface QRCodeOptions extends BaseEncodeOptions {
   version?: number
   /** 纠错等级，默认 'M' */
   errorLevel?: ErrorCorrectionLevel
-  /** 掩码模式 (0-7)，不指定则自动选择最优 */
-  maskPattern?: number
   /** 编码模式，不指定则自动选择 */
   mode?: 'numeric' | 'alphanumeric' | 'byte'
 }
@@ -30,8 +28,6 @@ export interface QRCodeOptions extends BaseEncodeOptions {
 export interface DataMatrixOptions extends BaseEncodeOptions {
   /** 形状：方形或矩形 */
   shape?: 'square' | 'rectangle'
-  /** 编码模式 */
-  mode?: 'ascii' | 'c40' | 'text' | 'x12' | 'edifact' | 'base256'
 }
 
 /**
@@ -44,8 +40,6 @@ export interface PDF417Options extends BaseEncodeOptions {
   columns?: number
   /** 行高 (1-90) */
   rows?: number
-  /** 宽高比 */
-  aspectRatio?: number
 }
 
 /**
@@ -60,33 +54,22 @@ export interface BarcodeOptions {
   quietZone?: number
   /** 上下留白高度（行数），默认 1 */
   verticalMargin?: number
-  /** 是否显示文字 */
-  showText?: boolean
 }
 
 /**
  * EAN/UPC 编码选项
  */
-export interface EANOptions extends BarcodeOptions {
-  /** 是否包含校验位，默认 true（自动计算） */
-  includeChecksum?: boolean
-}
+export interface EANOptions extends BarcodeOptions {}
 
 /**
  * Code 128 编码选项
  */
-export interface Code128Options extends BarcodeOptions {
-  /** 编码子集：A/B/C 或自动 */
-  subset?: 'A' | 'B' | 'C' | 'auto'
-}
+export interface Code128Options extends BarcodeOptions {}
 
 /**
  * ITF 编码选项
  */
-export interface ITFOptions extends BarcodeOptions {
-  /** 宽窄比，默认 2.5 */
-  wideToNarrowRatio?: number
-}
+export interface ITFOptions extends BarcodeOptions {}
 
 /**
  * 可直接编码的码制类型

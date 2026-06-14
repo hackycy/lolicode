@@ -54,6 +54,10 @@ describe('code128Encoder', () => {
     expect(runs.reduce((sum, run) => sum + run, 0)).toBe(46)
   })
 
+  it('throws on unsupported subset option', () => {
+    expect(() => encoder.encode('ABC123', { subset: 'C' } as never)).toThrow('Code 128 subset option is not supported')
+  })
+
   it('uses independent barcode layout defaults', () => {
     const result = encoder.encode('ABC123')
     expect(result.height).toBe(26)
@@ -72,6 +76,10 @@ describe('code128Encoder', () => {
     expect(result.width).toBe((encoder.getModuleCount('ABC123') + 4) * 3)
     expect(result.data[0].every(cell => cell === 0)).toBe(true)
     expect(result.data[1].slice(0, 6).every(cell => cell === 0)).toBe(true)
+  })
+
+  it('throws on unsupported showText option', () => {
+    expect(() => encoder.encode('ABC123', { showText: true } as never)).toThrow('Barcode showText option is not supported')
   })
 
   it('produces consistent output', () => {
@@ -155,6 +163,10 @@ describe('eAN13Encoder', () => {
     const result = ean13('400638133393')
     expect(result.metadata.type).toBe('ean13')
   })
+
+  it('throws on unsupported includeChecksum option', () => {
+    expect(() => encoder.encode('400638133393', { includeChecksum: false } as never)).toThrow('EAN includeChecksum option is not supported')
+  })
 })
 
 describe('iTFEncoder', () => {
@@ -183,5 +195,13 @@ describe('iTFEncoder', () => {
   it('itf convenience function works', () => {
     const result = itf('1234')
     expect(result.metadata.type).toBe('itf')
+  })
+
+  it('encodeToRuns also rejects odd-length content', () => {
+    expect(() => encoder.encodeToRuns('123')).toThrow('Invalid content for itf')
+  })
+
+  it('throws on unsupported wideToNarrowRatio option', () => {
+    expect(() => encoder.encode('1234', { wideToNarrowRatio: 3 } as never)).toThrow('ITF wideToNarrowRatio option is not supported')
   })
 })

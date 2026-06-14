@@ -61,6 +61,10 @@ describe('uPCEncoder', () => {
     const result = encoder.encode('012345')
     expect(result.width).toBe((encoder.getModuleCount('012345') + 18) * 2)
   })
+
+  it('throws on unsupported includeChecksum option', () => {
+    expect(() => encoder.encode('012345', { includeChecksum: false } as never)).toThrow('EAN includeChecksum option is not supported')
+  })
 })
 
 describe('code93Encoder', () => {

@@ -29,9 +29,9 @@ describe('aztecEncoder', () => {
     expect(encoder.validate('')).toBe(false)
   })
 
-  it('rejects unsupported characters', () => {
-    expect(encoder.validate('hello!')).toBe(false)
-    expect(encoder.validate('test@123')).toBe(false)
+  it('supports punctuation and mixed-case content', () => {
+    expect(encoder.validate('hello!')).toBe(true)
+    expect(encoder.validate('test@123')).toBe(true)
   })
 
   it('encodes to valid matrix', () => {
@@ -72,7 +72,7 @@ describe('aztecEncoder', () => {
   })
 
   it('throws on content too long', () => {
-    const longContent = 'A'.repeat(51)
+    const longContent = 'A'.repeat(encoder.getMaxLength() + 1)
     expect(() => encoder.encode(longContent)).toThrow()
   })
 })

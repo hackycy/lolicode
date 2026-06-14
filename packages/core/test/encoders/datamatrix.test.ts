@@ -25,6 +25,23 @@ describe('dataMatrixEncoder', () => {
     }
   })
 
+  it('uses ECC200 finder borders', () => {
+    const result = encoder.encode('A')
+    expect(result.data[0].filter((_cell, index) => index % 2 === 0).every(cell => cell === 1)).toBe(true)
+    expect(result.data[result.height - 1].every(cell => cell === 1)).toBe(true)
+    expect(result.data.every(row => row[0] === 1)).toBe(true)
+    expect(result.data.every((row, index) => row[result.width - 1] === (index % 2 === 0 ? 0 : 1))).toBe(true)
+  })
+
+  it('supports rectangular symbols', () => {
+    const result = encoder.encode('HELLO', { shape: 'rectangle' })
+    expect(result.width).toBeGreaterThan(result.height)
+  })
+
+  it('throws on unsupported mode option', () => {
+    expect(() => encoder.encode('HELLO', { mode: 'base256' } as never)).toThrow('Unsupported Data Matrix mode')
+  })
+
   it('produces consistent output', () => {
     const a = encoder.encode('TEST')
     const b = encoder.encode('TEST')
