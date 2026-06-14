@@ -423,8 +423,8 @@ export interface BaseRenderOptions {}
  * Canvas 渲染选项
  */
 export interface CanvasRenderOptions extends BaseRenderOptions {
-  /** Canvas 元素或 2D Context */
-  target: HTMLCanvasElement | CanvasRenderingContext2D
+  /** Canvas 元素或 2D Context（core 层保持跨环境，精确类型由 renderer-canvas 提供） */
+  target: unknown
   /** 模块大小（像素），默认 4 */
   moduleSize?: number
   /** 前景色（黑点），默认 '#000000' */
@@ -490,10 +490,18 @@ renderTerminal(prebuiltMatrix)
 ```typescript
 // packages/core/src/index.ts
 
+import { AztecEncoder } from './encoders/aztec'
+import { CodabarEncoder } from './encoders/barcode/codabar'
 import { Code39Encoder } from './encoders/barcode/code39'
+import { Code93Encoder } from './encoders/barcode/code93'
 import { Code128Encoder } from './encoders/barcode/code128'
+import { EAN8Encoder } from './encoders/barcode/ean8'
 import { EAN13Encoder } from './encoders/barcode/ean13'
+import { GS1_128Encoder } from './encoders/barcode/gs1_128'
 import { ITFEncoder } from './encoders/barcode/itf'
+import { MSIEncoder } from './encoders/barcode/msi'
+import { UPCAEncoder } from './encoders/barcode/upca'
+import { UPCEncoder } from './encoders/barcode/upce'
 import { DataMatrixEncoder } from './encoders/datamatrix'
 import { PDF417Encoder } from './encoders/pdf417'
 import { QREncoder } from './encoders/qrcode'
@@ -501,21 +509,27 @@ import { QREncoder } from './encoders/qrcode'
 // ============ 核心导出 ============
 
 export {
-  addMargin,
+  AztecEncoder,
+  CodabarEncoder,
   Code39Encoder,
+  Code93Encoder,
   Code128Encoder,
   DataMatrixEncoder,
+  EAN8Encoder,
   EAN13Encoder,
-  // 工具函数
-  invertMatrix,
+  GS1_128Encoder,
   ITFEncoder,
-
+  MSIEncoder,
   PDF417Encoder,
-  // 编码器
   QREncoder,
-  resizeMatrix,
-  validateContent,
-}
+  UPCAEncoder,
+  UPCEncoder,
+} from './encoders'
+
+export { BarcodeEncoder } from './encoders/barcode/base'
+export { Encoder } from './encoders/base'
+export { BaseRenderer } from './renderers/base'
+export { addMargin, invertMatrix, resizeMatrix, validateContent } from './utils/bit-matrix'
 
 // ============ 类型导出 ============
 
@@ -524,8 +538,12 @@ export type {
   BarcodeSymbol,
   // 选项类型
   BaseEncodeOptions,
+  BaseRenderOptions,
   CanvasRenderOptions,
   Code128Options,
+  CodeEncodeOptionsMap,
+  CodeEncodeRequest,
+  CodeFamily,
   CodeType,
 
   DataMatrixOptions,
@@ -533,6 +551,7 @@ export type {
   DotMatrixMetadata,
   DotValue,
   EANOptions,
+  EncodableCodeType,
   ErrorCorrectionLevel,
   ITFOptions,
   PDF417Options,
@@ -589,6 +608,21 @@ export function ean13(content: string, options?: EANOptions): DotMatrix {
 }
 
 /**
+ * 快速生成 EAN-8 条形码点阵
+ */
+export function ean8(content: string, options?: EANOptions): DotMatrix
+
+/**
+ * 快速生成 UPC-A 条形码点阵
+ */
+export function upca(content: string, options?: EANOptions): DotMatrix
+
+/**
+ * 快速生成 UPC-E 条形码点阵
+ */
+export function upce(content: string, options?: EANOptions): DotMatrix
+
+/**
  * 快速生成 ITF 条形码点阵
  */
 export function itf(content: string, options?: ITFOptions): DotMatrix {
@@ -596,10 +630,36 @@ export function itf(content: string, options?: ITFOptions): DotMatrix {
 }
 
 /**
+ * 快速生成 Code 93 条形码点阵
+ */
+export function code93(content: string, options?: BarcodeOptions): DotMatrix
+
+/**
+ * 快速生成 Codabar 条形码点阵
+ */
+export function codabar(content: string, options?: BarcodeOptions): DotMatrix
+
+/**
+ * 快速生成 MSI Plessey 条形码点阵
+ */
+export function msi(content: string, options?: BarcodeOptions): DotMatrix
+
+/**
+ * 快速生成 GS1-128 条形码点阵
+ */
+export function gs1_128(content: string, options?: BarcodeOptions): DotMatrix
+
+/**
+ * 快速生成 Aztec Code 点阵
+ */
+export function aztec(content: string, options?: BaseEncodeOptions): DotMatrix
+
+/**
  * 根据声明式请求生成点阵
  */
 export function encode(request: CodeEncodeRequest): DotMatrix {
-  // 根据 request.type 分发到对应编码器
+  // 根据 request.type 分发到 qrcode/datamatrix/pdf417/aztec
+  // 以及 code128/code39/code93/codabar/gs1_128/msi/ean13/ean8/upca/upce/itf
 }
 ```
 
