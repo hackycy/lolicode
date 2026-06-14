@@ -376,7 +376,6 @@ export class QREncoder extends Encoder<QRCodeOptions> {
       case 'numeric': return 0b0001
       case 'alphanumeric': return 0b0010
       case 'byte': return 0b0100
-      case 'kanji': return 0b1000
       default: return 0b0100
     }
   }
@@ -387,7 +386,6 @@ export class QREncoder extends Encoder<QRCodeOptions> {
       numeric: [10, 12, 14],
       alphanumeric: [9, 11, 13],
       byte: [8, 16, 16],
-      kanji: [8, 10, 12],
     }
     return counts[mode]?.[idx] ?? 8
   }

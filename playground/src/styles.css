@@ -1,5 +1,5 @@
 :root {
-  color: #172033;
+  color: #1a2433;
   background: #eef2f3;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -11,14 +11,20 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
 }
 
+a,
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -28,17 +34,21 @@ button {
 
 .shell {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: 256px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
+  height: 100vh;
   padding: 24px;
+  overflow: auto;
   color: #f8fafc;
-  background: #183f3a;
+  background: #193c37;
 }
 
 .brand {
@@ -56,7 +66,7 @@ button {
   border: 1px solid rgb(255 255 255 / 28%);
   border-radius: 8px;
   background: #d7f171;
-  color: #183f3a;
+  color: #193c37;
   font-size: 0.9rem;
   font-weight: 800;
 }
@@ -73,17 +83,31 @@ button {
   font-size: 0.85rem;
 }
 
-.renderer-tabs,
+.toc,
+.preset-groups,
 .preset-list {
   display: grid;
   gap: 6px;
 }
 
-.renderer-tabs {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.preset-groups {
+  gap: 18px;
 }
 
-.renderer-tab,
+.preset-group {
+  display: grid;
+  gap: 8px;
+}
+
+.preset-group h2 {
+  margin: 0;
+  color: #aebfba;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.toc a,
 .preset-button {
   min-height: 38px;
   border: 1px solid transparent;
@@ -91,20 +115,16 @@ button {
   padding: 0 10px;
   color: #e6eeeb;
   background: transparent;
-}
-
-.renderer-tab {
-  text-transform: uppercase;
-  font-size: 0.74rem;
-  font-weight: 800;
-}
-
-.preset-button {
   text-align: left;
+  text-decoration: none;
 }
 
-.renderer-tab:hover,
-.renderer-tab[aria-selected="true"],
+.toc a {
+  display: flex;
+  align-items: center;
+}
+
+.toc a:hover,
 .preset-button:hover,
 .preset-button[aria-pressed="true"] {
   border-color: rgb(255 255 255 / 20%);
@@ -113,15 +133,107 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-rows: auto minmax(360px, 48vh) auto;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
+  padding: 24px;
+}
+
+.page-header,
+.lesson-card,
+.lesson-section {
+  border: 1px solid #d4dde0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #687987;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.page-header h2,
+.lesson-copy h2,
+.section-head h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 1.28rem;
+  line-height: 1.2;
+}
+
+.renderer-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #d5dee2;
+  border-radius: 8px;
+  background: #f6f8f9;
+}
+
+.renderer-tab {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  color: #465765;
+  background: transparent;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.renderer-tab[aria-selected="true"] {
+  color: #10231f;
+  background: #d7f171;
+}
+
+.lesson-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.lesson-copy,
+.section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lesson-copy p,
+.section-head p {
+  max-width: 760px;
+  margin: 6px 0 0;
+  color: #5b6c79;
+}
+
+.step-label {
+  display: grid;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 8px;
+  background: #173f3a;
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .controls {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(92px, 0.6fr));
+  grid-template-columns: minmax(180px, 2fr) repeat(7, minmax(92px, 0.6fr));
   gap: 10px;
   align-items: end;
 }
@@ -133,12 +245,13 @@ button {
 
 .controls span {
   color: #506070;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.76rem;
+  font-weight: 800;
   text-transform: uppercase;
 }
 
-.controls input {
+.controls input,
+.controls select {
   width: 100%;
   min-height: 40px;
   border: 1px solid #cad4d8;
@@ -148,27 +261,27 @@ button {
   background: #ffffff;
 }
 
+.controls input:disabled,
+.controls select:disabled {
+  color: #94a3ad;
+  background: #f2f5f6;
+}
+
 .controls input[type="color"] {
   padding: 4px;
 }
 
-.hero-preview,
-.example-panel {
-  min-width: 0;
-  min-height: 0;
-  border: 1px solid #d4dde0;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
 .hero-preview {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+  min-height: 360px;
   overflow: hidden;
+  border: 1px solid #d4dde0;
+  border-radius: 8px;
 }
 
 .preview-stage,
-.example-stage {
+.sample-preview {
   display: grid;
   min-width: 0;
   min-height: 0;
@@ -190,7 +303,8 @@ button {
 }
 
 .lolicode-svg svg,
-.lolicode-canvas {
+.lolicode-canvas,
+.data-url-preview {
   display: block;
   max-width: 100%;
   max-height: 100%;
@@ -206,15 +320,11 @@ button {
   border: 1px solid #d4dde0;
   border-radius: 8px;
   padding: 14px;
+  color: #9f1239;
   background: #fbfcfd;
-  color: #1f2d3a;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.82rem;
   line-height: 1.05;
-}
-
-.lolicode-error {
-  color: #9f1239;
   white-space: normal;
 }
 
@@ -225,61 +335,76 @@ button {
   overflow: auto;
   border-left: 1px solid #e2e8ea;
   padding: 18px;
-  color: #26364a;
+  color: #223246;
   background: #f8fafc;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.78rem;
+  line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.example-grid {
+.lesson-section {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 18px;
+}
+
+.sample-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
-.example-panel {
+.sample-card {
   display: grid;
-  grid-template-rows: auto minmax(220px, 1fr) minmax(130px, auto);
+  grid-template-rows: auto minmax(260px, 1fr);
   overflow: hidden;
+  border: 1px solid #d4dde0;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 48px;
+.sample-head {
+  min-height: 64px;
   border-bottom: 1px solid #e2e8ea;
-  padding: 0 14px;
+  padding: 12px 14px;
 }
 
-.panel-header h2 {
-  margin: 0;
-  font-size: 0.94rem;
+.sample-head h3 {
+  margin: 4px 0 0;
+  color: #172033;
+  font-size: 1rem;
 }
 
-.panel-header span {
-  color: #64717d;
-  font-size: 0.78rem;
+.sample-kicker {
+  color: #687987;
+  font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
+.sample-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(260px, 1.15fr);
+  min-width: 0;
+  min-height: 0;
+}
+
 .code-sample.compact {
-  border-top: 1px solid #e2e8ea;
-  border-left: 0;
+  border-left: 1px solid #e2e8ea;
   padding: 14px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .hero-preview,
-  .example-grid {
+  .sample-grid,
+  .sample-body {
     grid-template-columns: 1fr;
   }
 
-  .code-sample {
+  .code-sample,
+  .code-sample.compact {
     border-top: 1px solid #e2e8ea;
     border-left: 0;
   }
@@ -291,20 +416,33 @@ button {
   }
 
   .sidebar {
+    position: static;
+    height: auto;
     padding: 16px;
   }
 
+  .toc,
   .preset-list {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
+  .preset-groups {
+    gap: 12px;
+  }
+
+  .toc a,
   .preset-button {
+    justify-content: center;
     text-align: center;
   }
 
   .workspace {
-    grid-template-rows: auto auto auto;
     padding: 16px;
+  }
+
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .controls {
@@ -313,7 +451,13 @@ button {
 }
 
 @media (max-width: 560px) {
+  .toc,
   .preset-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lesson-copy,
+  .section-head {
+    display: grid;
   }
 }

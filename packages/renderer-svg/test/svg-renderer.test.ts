@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { renderSVG, SVGRenderer } from '../src'
+import { renderDataURL, renderSVG, SVGRenderer } from '../src'
 
 describe('renderSVG', () => {
   it('renders raw matrix data as svg rectangles', () => {
@@ -51,6 +51,13 @@ describe('renderSVG', () => {
 
   it('rejects invalid module size', () => {
     expect(() => renderSVG([[1]], { moduleSize: 0 })).toThrow('moduleSize must be a positive number')
+  })
+
+  it('renders svg as data url', () => {
+    const result = renderDataURL('Hello', { type: 'qrcode', encode: { margin: 1 } })
+
+    expect(result).toMatch(/^data:image\/svg\+xml;charset=utf-8,/)
+    expect(decodeURIComponent(result.split(',')[1])).toContain('<svg')
   })
 })
 

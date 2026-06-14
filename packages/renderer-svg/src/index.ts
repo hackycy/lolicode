@@ -1,9 +1,9 @@
 import type { Renderer } from '@lolicode/core'
 
 import type { SVGInput, SVGRenderOptions } from './svg-renderer'
-import { renderSVG } from './svg-renderer'
+import { renderDataURL, renderSVG } from './svg-renderer'
 
-export { renderSVG }
+export { renderDataURL, renderSVG }
 export type { SVGCodeRenderOptions, SVGInput, SVGRenderOptions } from './svg-renderer'
 
 export class SVGRenderer implements Renderer<string, SVGRenderOptions> {

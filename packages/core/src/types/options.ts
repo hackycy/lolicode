@@ -21,7 +21,7 @@ export interface QRCodeOptions extends BaseEncodeOptions {
   /** 掩码模式 (0-7)，不指定则自动选择最优 */
   maskPattern?: number
   /** 编码模式，不指定则自动选择 */
-  mode?: 'numeric' | 'alphanumeric' | 'byte' | 'kanji'
+  mode?: 'numeric' | 'alphanumeric' | 'byte'
 }
 
 /**

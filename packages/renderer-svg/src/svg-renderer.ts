@@ -100,3 +100,16 @@ export function renderSVG<TType extends EncodableCodeType>(
 
   return renderData(getMatrixData(resolved), options)
 }
+
+export function renderDataURL<TType extends EncodableCodeType>(content: string, options: SVGCodeRenderOptions<TType>): string
+export function renderDataURL(input: SVGInput, options?: SVGRenderOptions): string
+export function renderDataURL<TType extends EncodableCodeType>(
+  input: SVGInput | string,
+  options?: SVGRenderOptions | SVGCodeRenderOptions<TType>,
+): string {
+  const svg = typeof input === 'string'
+    ? renderSVG(input, options as SVGCodeRenderOptions<TType>)
+    : renderSVG(input, options as SVGRenderOptions)
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+}
