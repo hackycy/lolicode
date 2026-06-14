@@ -55,25 +55,29 @@ export class MSIEncoder extends BarcodeEncoder {
   }
 
   private calculateMod10Check(content: string): string {
-    // Luhn 算法变体
+    // 标准 MSI Mod 10：从右数奇数位数字拼成一个数后整体 ×2 再逐位求和，
+    // 加上偶数位数字之和。
     const digits = content.split('').map(Number)
-    let sum = 0
+    let oddNumber = ''
+    let evenSum = 0
 
-    for (let i = digits.length - 1; i >= 0; i--) {
-      let digit = digits[i]
-
-      // 从右向左，偶数位乘以 2
-      if ((digits.length - 1 - i) % 2 === 1) {
-        digit *= 2
-        if (digit > 9) {
-          digit = Math.floor(digit / 10) + (digit % 10)
-        }
+    for (let i = 0; i < digits.length; i++) {
+      // 从右数的位置（最右为 1）
+      const posFromRight = digits.length - i
+      if (posFromRight % 2 === 1) {
+        oddNumber += digits[i].toString()
       }
-
-      sum += digit
+      else {
+        evenSum += digits[i]
+      }
     }
 
-    const checkDigit = (10 - (sum % 10)) % 10
+    let oddSum = 0
+    for (const ch of (Number.parseInt(oddNumber || '0', 10) * 2).toString()) {
+      oddSum += Number(ch)
+    }
+
+    const checkDigit = (10 - ((oddSum + evenSum) % 10)) % 10
     return checkDigit.toString()
   }
 

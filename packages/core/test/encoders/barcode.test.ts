@@ -84,6 +84,29 @@ describe('code128Encoder', () => {
     const result = code128('TEST')
     expect(result.metadata.type).toBe('code128')
   })
+
+  it('auto mode compresses numeric runs with Code C', () => {
+    // 8 digits in Code C = START_C + 4 pairs + checksum + STOP = 7 codewords
+    // vs Code B = START_B + 8 chars + checksum + STOP = 11 codewords
+    const cModules = encoder.getModuleCount('12345678')
+    const bModules = encoder.getModuleCount('ABCDEFGH')
+    expect(cModules).toBeLessThan(bModules)
+  })
+
+  it('encodes fixed Code C subset (even digits only)', () => {
+    expect(() => encoder.encode('1234', { subset: 'C' })).not.toThrow()
+    expect(() => encoder.encode('123', { subset: 'C' })).toThrow()
+    expect(() => encoder.encode('12AB', { subset: 'C' })).toThrow()
+  })
+
+  it('encodes fixed Code A subset', () => {
+    expect(() => encoder.encode('ABC', { subset: 'A' })).not.toThrow()
+  })
+
+  it('auto mode handles mixed alphanumeric content', () => {
+    const result = encoder.encode('AB12CD3456')
+    isValidBarcodeMatrix(result)
+  })
 })
 
 describe('code39Encoder', () => {

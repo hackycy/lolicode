@@ -1,10 +1,13 @@
 import type { DotMatrix, DotValue } from '../types/matrix'
+import type { BaseEncodeOptions } from '../types/options'
 
 /**
  * 给点阵添加边距
  */
 export function addMargin(matrix: DotMatrix, margin: number): DotMatrix {
-  if (margin <= 0)
+  if (!Number.isInteger(margin) || margin < 0)
+    throw new Error(`Invalid margin: ${margin}`)
+  if (margin === 0)
     return matrix
 
   const { data, width, height, metadata } = matrix
@@ -48,6 +51,8 @@ export function invertMatrix(matrix: DotMatrix): DotMatrix {
  * 调整点阵大小（最近邻采样）
  */
 export function resizeMatrix(matrix: DotMatrix, scale: number): DotMatrix {
+  if (scale <= 0)
+    throw new Error(`Invalid resize scale: ${scale}`)
   if (scale === 1)
     return matrix
 
@@ -79,4 +84,17 @@ export function resizeMatrix(matrix: DotMatrix, scale: number): DotMatrix {
  */
 export function validateContent(content: string, maxLength: number): boolean {
   return content.length > 0 && content.length <= maxLength
+}
+
+/**
+ * 统一应用矩阵类码制的通用后处理：先加边距，再按需反转颜色。
+ */
+export function finalizeMatrix(
+  matrix: DotMatrix,
+  options: BaseEncodeOptions | undefined,
+  defaultMargin: number,
+): DotMatrix {
+  const margin = options?.margin ?? defaultMargin
+  const withMargin = addMargin(matrix, margin)
+  return options?.inverted ? invertMatrix(withMargin) : withMargin
 }

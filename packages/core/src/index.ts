@@ -6,7 +6,6 @@ import type {
   DataMatrixOptions,
   DotMatrix,
   EANOptions,
-  ITFOptions,
   PDF417Options,
   QRCodeOptions,
 } from './types'
@@ -71,7 +70,6 @@ export type {
   EANOptions,
   EncodableCodeType,
   ErrorCorrectionLevel,
-  ITFOptions,
   PDF417Options,
 
   QRCodeOptions,
@@ -137,7 +135,7 @@ export function ean13(content: string, options?: EANOptions): DotMatrix {
 /**
  * 快速生成 ITF 条形码点阵
  */
-export function itf(content: string, options?: ITFOptions): DotMatrix {
+export function itf(content: string, options?: BarcodeOptions): DotMatrix {
   return new ITFEncoder().encode(content, options)
 }
 

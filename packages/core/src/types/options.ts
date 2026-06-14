@@ -81,14 +81,6 @@ export interface Code128Options extends BarcodeOptions {
 }
 
 /**
- * ITF 编码选项
- */
-export interface ITFOptions extends BarcodeOptions {
-  /** 宽窄比，默认 2.5 */
-  wideToNarrowRatio?: number
-}
-
-/**
  * 可直接编码的码制类型
  */
 export type EncodableCodeType = Exclude<CodeType, 'qrcode-micro'>
@@ -111,7 +103,7 @@ export interface CodeEncodeOptionsMap {
   ean8: EANOptions
   upca: EANOptions
   upce: EANOptions
-  itf: ITFOptions
+  itf: BarcodeOptions
 }
 
 /**

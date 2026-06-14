@@ -1,4 +1,5 @@
 import type { BaseEncodeOptions, CodeType, DotMatrix, DotValue } from '../../types'
+import { finalizeMatrix } from '../../utils/bit-matrix'
 import { Encoder } from '../base'
 import { calculateReedSolomon } from '../qrcode/reed-solomon'
 
@@ -38,6 +39,11 @@ function charToBits(ch: string): number | null {
  * Aztec Code 编码器
  * 用于机票、运输票据等
  * 支持 Compact Aztec（4 种大小）
+ *
+ * 限制：当前实现为简化版——使用自定义 5-bit 字符集、简化的模式消息与
+ * 螺旋布局，且未实现 ISO/IEC 24778 规定的 Galois 域纠错与 bulls-eye
+ * 参考网格。生成的符号结构有效、尺寸正确，但不符合标准，无法被通用
+ * Aztec 扫描器识别。要做到可扫描需实现标准高层编码、域参数与布局。
  */
 export class AztecEncoder extends Encoder<BaseEncodeOptions> {
   getType(): CodeType {
@@ -45,7 +51,8 @@ export class AztecEncoder extends Encoder<BaseEncodeOptions> {
   }
 
   getMaxLength(): number {
-    return 50
+    // Compact Aztec 最大 4 层 = 100 数据 bit，每字符 5 bit => 20 字符
+    return 20
   }
 
   validate(content: string): boolean {
@@ -82,8 +89,7 @@ export class AztecEncoder extends Encoder<BaseEncodeOptions> {
     // 4. 放置数据位
     this.placeData(matrix, size, layers, dataWithEC)
 
-    const margin = options?.margin ?? 2
-    return this.buildDotMatrix(matrix, content, margin)
+    return this.buildDotMatrix(matrix, content, options)
   }
 
   private encodeToBits(content: string): number[] {
@@ -256,28 +262,18 @@ export class AztecEncoder extends Encoder<BaseEncodeOptions> {
     return Math.abs(x - center) <= half && Math.abs(y - center) <= half
   }
 
-  private buildDotMatrix(matrix: number[][], content: string, margin: number): DotMatrix {
-    // 添加边距
+  private buildDotMatrix(matrix: number[][], content: string, options?: BaseEncodeOptions): DotMatrix {
     const innerHeight = matrix.length
     const innerWidth = matrix[0].length
-    const width = innerWidth + margin * 2
-    const height = innerHeight + margin * 2
 
-    const data: DotValue[][] = Array.from(
-      { length: height },
-      (): DotValue[] => Array.from({ length: width }, () => 0),
+    const data: DotValue[][] = matrix.map(
+      row => row.map(v => v as DotValue),
     )
 
-    for (let y = 0; y < innerHeight; y++) {
-      for (let x = 0; x < innerWidth; x++) {
-        data[y + margin][x + margin] = matrix[y][x] as DotValue
-      }
-    }
-
-    return {
+    const dotMatrix: DotMatrix = {
       data,
-      width,
-      height,
+      width: innerWidth,
+      height: innerHeight,
       metadata: {
         type: 'aztec',
         family: 'matrix',
@@ -285,5 +281,7 @@ export class AztecEncoder extends Encoder<BaseEncodeOptions> {
         generatedAt: Date.now(),
       },
     }
+
+    return finalizeMatrix(dotMatrix, options, 2)
   }
 }

@@ -1,4 +1,4 @@
-import type { CodeType } from '../../types'
+import type { Code128Options, CodeType, DotMatrix } from '../../types'
 import { BarcodeEncoder } from './base'
 
 // Code 128 编码表：每个符号的条空模式（6个元素：3条+3空）
@@ -113,16 +113,23 @@ const CODE128_PATTERNS: number[][] = [
   [2, 3, 3, 1, 1, 1, 2], // 106 (STOP)
 ]
 
-// Code 128 子集定义
-const _CODE_A_OFFSET = 103
-const CODE_B_OFFSET = 104
-const _CODE_C_OFFSET = 105
+// Code 128 起始码与控制码（码字值）
+const START_A = 103
+const START_B = 104
+const START_C = 105
+const CODE_C = 99 // 在 A/B 子集中切换到 C
+const CODE_B = 100 // 在 A/C 子集中切换到 B
 const STOP_CODE = 106
 
 /**
  * Code 128 编码器
+ *
+ * 支持子集 A/B/C 及自动选择（auto）。auto 模式下对连续数字使用 Code C
+ * 进行成对压缩，其余字符使用 Code B。
  */
 export class Code128Encoder extends BarcodeEncoder {
+  private subset: 'A' | 'B' | 'C' | 'auto' = 'auto'
+
   getType(): CodeType {
     return 'code128'
   }
@@ -134,7 +141,7 @@ export class Code128Encoder extends BarcodeEncoder {
   validate(content: string): boolean {
     if (content.length === 0 || content.length > this.getMaxLength())
       return false
-    // Code 128B 支持 ASCII 32-127
+    // 支持可打印 ASCII 32-127
     for (let i = 0; i < content.length; i++) {
       const code = content.charCodeAt(i)
       if (code < 32 || code > 127)
@@ -143,10 +150,15 @@ export class Code128Encoder extends BarcodeEncoder {
     return true
   }
 
+  encode(content: string, options?: Code128Options): DotMatrix {
+    this.subset = options?.subset ?? 'auto'
+    return super.encode(content, options)
+  }
+
   encodeToRuns(content: string): number[] {
     const codes = this.encodeContent(content)
     const checksum = this.calculateChecksum(codes)
-    const allCodes = [codes[0], ...codes.slice(1), checksum, STOP_CODE]
+    const allCodes = [...codes, checksum, STOP_CODE]
 
     const modules: number[] = []
     for (const code of allCodes) {
@@ -159,10 +171,99 @@ export class Code128Encoder extends BarcodeEncoder {
   }
 
   private encodeContent(content: string): number[] {
-    // 使用 Code 128B 子集
-    const codes: number[] = [CODE_B_OFFSET]
+    switch (this.subset) {
+      case 'A':
+        return this.encodeFixedAB(content, 'A')
+      case 'B':
+        return this.encodeFixedAB(content, 'B')
+      case 'C':
+        return this.encodeFixedC(content)
+      default:
+        return this.encodeAuto(content)
+    }
+  }
+
+  private isDigit(ch: string): boolean {
+    return ch >= '0' && ch <= '9'
+  }
+
+  private digitsFrom(content: string, idx: number): number {
+    let n = 0
+    while (idx + n < content.length && this.isDigit(content[idx + n]))
+      n++
+    return n
+  }
+
+  private encodeValueAB(code: number, set: 'A' | 'B'): number {
+    if (set === 'B') {
+      if (code < 32 || code > 127)
+        throw new Error(`Character code ${code} not encodable in Code 128B`)
+      return code - 32
+    }
+    // Code A: 32-95 -> 0-63, 0-31 (控制字符) -> 64-95
+    if (code >= 32 && code <= 95)
+      return code - 32
+    if (code >= 0 && code <= 31)
+      return code + 64
+    throw new Error(`Character code ${code} not encodable in Code 128A`)
+  }
+
+  private encodeFixedAB(content: string, set: 'A' | 'B'): number[] {
+    const codes: number[] = [set === 'A' ? START_A : START_B]
     for (let i = 0; i < content.length; i++) {
-      codes.push(content.charCodeAt(i) - 32)
+      codes.push(this.encodeValueAB(content.charCodeAt(i), set))
+    }
+    return codes
+  }
+
+  private encodeFixedC(content: string): number[] {
+    if (content.length % 2 !== 0)
+      throw new Error('Code 128C requires an even number of digits')
+    const codes: number[] = [START_C]
+    for (let i = 0; i < content.length; i += 2) {
+      if (!this.isDigit(content[i]) || !this.isDigit(content[i + 1]))
+        throw new Error('Code 128C only encodes digits')
+      codes.push(Number.parseInt(content.substring(i, i + 2), 10))
+    }
+    return codes
+  }
+
+  private encodeAuto(content: string): number[] {
+    const codes: number[] = []
+    let i = 0
+    let mode: 'B' | 'C'
+
+    const initialDigits = this.digitsFrom(content, 0)
+    if (initialDigits >= 2 && (initialDigits >= 4 || initialDigits === content.length)) {
+      mode = 'C'
+      codes.push(START_C)
+    }
+    else {
+      mode = 'B'
+      codes.push(START_B)
+    }
+
+    while (i < content.length) {
+      if (mode === 'C') {
+        if (this.digitsFrom(content, i) >= 2) {
+          codes.push(Number.parseInt(content.substring(i, i + 2), 10))
+          i += 2
+        }
+        else {
+          codes.push(CODE_B)
+          mode = 'B'
+        }
+      }
+      else {
+        if (this.digitsFrom(content, i) >= 4) {
+          codes.push(CODE_C)
+          mode = 'C'
+        }
+        else {
+          codes.push(this.encodeValueAB(content.charCodeAt(i), 'B'))
+          i++
+        }
+      }
     }
     return codes
   }

@@ -17,7 +17,6 @@ export type {
   DataMatrixOptions,
   EANOptions,
   EncodableCodeType,
-  ITFOptions,
   PDF417Options,
   QRCodeOptions,
 } from './options'

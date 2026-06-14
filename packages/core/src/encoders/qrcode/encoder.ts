@@ -1,5 +1,5 @@
 import type { DotMatrix, DotValue, ErrorCorrectionLevel, QRCodeOptions } from '../../types'
-import { addMargin } from '../../utils/bit-matrix'
+import { finalizeMatrix } from '../../utils/bit-matrix'
 import { getAlphanumericValue, getBytes, isAlphanumeric, isNumeric } from '../../utils/encoding'
 import { Encoder } from '../base'
 import { applyMask, calculatePenalty } from './mask-patterns'
@@ -71,27 +71,27 @@ const EC_CODEWORDS_PER_BLOCK: number[][] = [
   [28, 28, 28, 28], // V17
   [30, 26, 28, 28], // V18
   [28, 26, 26, 26], // V19
-  [28, 26, 28, 28], // V20
+  [28, 26, 30, 28], // V20
   [28, 26, 28, 30], // V21
-  [28, 28, 28, 24], // V22
-  [30, 28, 28, 30], // V23
-  [30, 28, 28, 30], // V24
-  [26, 28, 28, 30], // V25
-  [28, 28, 28, 28], // V26
-  [30, 28, 28, 30], // V27
-  [30, 28, 28, 30], // V28
-  [30, 28, 28, 30], // V29
-  [30, 28, 28, 30], // V30
-  [30, 28, 28, 30], // V31
-  [30, 28, 28, 30], // V32
-  [30, 28, 28, 30], // V33
-  [30, 28, 28, 30], // V34
-  [30, 28, 28, 30], // V35
-  [30, 28, 28, 30], // V36
-  [30, 28, 28, 30], // V37
-  [30, 28, 28, 30], // V38
-  [30, 28, 28, 30], // V39
-  [30, 28, 28, 30], // V40
+  [28, 28, 30, 24], // V22
+  [30, 28, 30, 30], // V23
+  [30, 28, 30, 30], // V24
+  [26, 28, 30, 30], // V25
+  [28, 28, 28, 30], // V26
+  [30, 28, 30, 30], // V27
+  [30, 28, 30, 30], // V28
+  [30, 28, 30, 30], // V29
+  [30, 28, 30, 30], // V30
+  [30, 28, 30, 30], // V31
+  [30, 28, 30, 30], // V32
+  [30, 28, 30, 30], // V33
+  [30, 28, 30, 30], // V34
+  [30, 28, 30, 30], // V35
+  [30, 28, 30, 30], // V36
+  [30, 28, 30, 30], // V37
+  [30, 28, 30, 30], // V38
+  [30, 28, 30, 30], // V39
+  [30, 28, 30, 30], // V40
 ]
 
 // 纠错块数量，索引: [version-1][errorLevel]
@@ -359,8 +359,7 @@ export class QREncoder extends Encoder<QRCodeOptions> {
       },
     }
 
-    const margin = options?.margin ?? 4
-    return margin > 0 ? addMargin(dotMatrix, margin) : dotMatrix
+    return finalizeMatrix(dotMatrix, options, 4)
   }
 
   private detectMode(content: string): 'numeric' | 'alphanumeric' | 'byte' {

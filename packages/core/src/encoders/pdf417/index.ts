@@ -1,4 +1,5 @@
 import type { DotMatrix, DotValue, PDF417Options } from '../../types'
+import { finalizeMatrix } from '../../utils/bit-matrix'
 import { Encoder } from '../base'
 
 // GF(929) 有限域运算（PDF417 使用 GF(929)）
@@ -105,6 +106,12 @@ const STOP_PATTERN: number[] = [7, 1, 1, 3, 1, 1, 1, 2, 1]
 /**
  * PDF417 编码器
  * 实现文本模式编码
+ *
+ * 限制：当前的码字条空模式由 `generateSinglePattern` 以确定性算法生成，
+ * 并非 ISO/IEC 15438 规定的固定码字簇表。生成的符号结构有效、尺寸正确、
+ * Reed-Solomon(GF929) 纠错也正确，但条空模式不符合标准码字簇，
+ * 因此无法被通用 PDF417 扫描器识别。要做到可扫描需引入标准簇表
+ * （3 × 929 个固定模式）。
  */
 export class PDF417Encoder extends Encoder<PDF417Options> {
   getType(): 'pdf417' {
@@ -124,27 +131,36 @@ export class PDF417Encoder extends Encoder<PDF417Options> {
       throw new Error(`Invalid PDF417 content: "${content}"`)
 
     const securityLevel = options?.securityLevel ?? 0
+    if (!Number.isInteger(securityLevel) || securityLevel < 0 || securityLevel > 8)
+      throw new Error(`Invalid PDF417 security level: ${securityLevel} (expected 0-8)`)
+
     const requestedColumns = options?.columns
+    if (requestedColumns !== undefined
+      && (!Number.isInteger(requestedColumns) || requestedColumns < 1 || requestedColumns > 30)) {
+      throw new Error(`Invalid PDF417 columns: ${requestedColumns} (expected 1-30)`)
+    }
 
     const dataCodewords = this.encodeText(content)
-    const columns = requestedColumns ?? Math.min(30, Math.ceil(Math.sqrt(dataCodewords.length / 3)))
+    const columns = requestedColumns ?? Math.min(30, Math.max(1, Math.ceil(Math.sqrt(dataCodewords.length / 3))))
 
-    // BUG 10 fix: EC count = 2^(securityLevel + 1)
+    // EC 码字数 = 2^(securityLevel + 1)
     const ecCount = 2 ** (securityLevel + 1)
-    const totalCodewords = dataCodewords.length + ecCount
-    const rows = Math.max(3, Math.min(90, Math.ceil(totalCodewords / columns)))
+    // 预留至少 1 个填充码字，避免数据恰好填满时无填充冗余
+    const totalCodewords = dataCodewords.length + 1 + ecCount
+    const rows = Math.max(3, Math.ceil(totalCodewords / columns))
+    if (rows > 90) {
+      throw new Error(`PDF417 content too long: requires ${rows} rows (max 90) at ${columns} columns`)
+    }
 
-    const paddedData = this.padCodewords(dataCodewords, rows * columns - ecCount)
+    const dataRegion = rows * columns - ecCount
+    const paddedData = this.padCodewords(dataCodewords, dataRegion)
     const ecCodewords = calculateReedSolomon929(paddedData, ecCount)
     const allCodewords = [...paddedData, ...ecCodewords]
-
-    while (allCodewords.length < rows * columns)
-      allCodewords.push(900)
 
     const matrix = this.buildMatrix(allCodewords, rows, columns)
     const width = columns * 17 + 35
 
-    return {
+    const dotMatrix: DotMatrix = {
       data: matrix,
       width,
       height: rows,
@@ -154,6 +170,8 @@ export class PDF417Encoder extends Encoder<PDF417Options> {
         generatedAt: Date.now(),
       },
     }
+
+    return finalizeMatrix(dotMatrix, options, 2)
   }
 
   private encodeText(content: string): number[] {
