@@ -1,6 +1,7 @@
 import type { EncodableCodeType } from '@lolicode/core'
-import { renderCanvas } from '@lolicode/renderer-canvas'
-import { renderSVG } from '@lolicode/renderer-svg'
+import type { LolicodeRenderer } from '@lolicode/vue'
+import { Lolicode } from '@lolicode/vue'
+import { computed, createApp, defineComponent, h, ref } from 'vue'
 import './styles.css'
 
 type PlaygroundCodeType = Extract<EncodableCodeType, 'qrcode' | 'datamatrix' | 'pdf417' | 'aztec' | 'code128' | 'code39' | 'ean13' | 'ean8' | 'upca' | 'itf'>
@@ -8,6 +9,14 @@ type PlaygroundCodeType = Extract<EncodableCodeType, 'qrcode' | 'datamatrix' | '
 interface Preset {
   content: string
   label: string
+  type: PlaygroundCodeType
+}
+
+interface Example {
+  content: string
+  encode?: Record<string, number | string>
+  renderer: LolicodeRenderer
+  title: string
   type: PlaygroundCodeType
 }
 
@@ -24,184 +33,208 @@ const presets: Preset[] = [
   { label: 'ITF', type: 'itf', content: '123456' },
 ]
 
-const app = document.querySelector<HTMLDivElement>('#app')
+const examples: Example[] = [
+  { title: 'SVG QR', renderer: 'svg', type: 'qrcode', content: 'https://lolicode.dev', encode: { margin: 2 } },
+  { title: 'Canvas barcode', renderer: 'canvas', type: 'code128', content: 'ABC123' },
+]
 
-if (app === null)
-  throw new Error('Playground root is missing')
+const rendererOptions: LolicodeRenderer[] = ['svg', 'canvas']
 
-app.innerHTML = `
-  <main class="shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <span class="brand-mark">LC</span>
-        <div>
-          <h1>lolicode</h1>
-          <p>Renderer playground</p>
-        </div>
-      </div>
-      <div class="preset-list" role="listbox" aria-label="Code presets">
-        ${presets.map((preset, index) => `
-          <button class="preset-button" type="button" data-preset="${index}" aria-pressed="${index === 0}">
-            ${preset.label}
-          </button>
-        `).join('')}
-      </div>
-    </aside>
-
-    <section class="workspace">
-      <form class="controls" id="controls">
-        <label>
-          <span>Type</span>
-          <select id="type">
-            ${presets.map(preset => `<option value="${preset.type}">${preset.label}</option>`).join('')}
-          </select>
-        </label>
-        <label class="content-field">
-          <span>Content</span>
-          <input id="content" type="text" value="${presets[0].content}" />
-        </label>
-        <label>
-          <span>Module</span>
-          <input id="module-size" type="number" min="1" max="20" step="1" value="6" />
-        </label>
-        <label>
-          <span>Margin</span>
-          <input id="margin" type="number" min="0" max="12" step="1" value="1" />
-        </label>
-        <label class="color-field">
-          <span>Ink</span>
-          <input id="foreground" type="color" value="#111827" />
-        </label>
-        <label class="color-field">
-          <span>Paper</span>
-          <input id="background" type="color" value="#f8fafc" />
-        </label>
-      </form>
-
-      <div class="preview-grid">
-        <section class="preview-panel" aria-labelledby="canvas-title">
-          <div class="panel-header">
-            <h2 id="canvas-title">Canvas</h2>
-            <output id="canvas-size"></output>
-          </div>
-          <div class="canvas-stage">
-            <canvas id="canvas-preview"></canvas>
-          </div>
-        </section>
-
-        <section class="preview-panel" aria-labelledby="svg-title">
-          <div class="panel-header">
-            <h2 id="svg-title">SVG</h2>
-            <output id="svg-size"></output>
-          </div>
-          <div class="svg-stage" id="svg-preview"></div>
-        </section>
-      </div>
-
-      <section class="source-panel" aria-labelledby="source-title">
-        <div class="panel-header">
-          <h2 id="source-title">SVG Source</h2>
-          <output id="status"></output>
-        </div>
-        <pre id="source"></pre>
-      </section>
-    </section>
-  </main>
-`
-
-const typeSelect = getElement<HTMLSelectElement>('type')
-const contentInput = getElement<HTMLInputElement>('content')
-const moduleSizeInput = getElement<HTMLInputElement>('module-size')
-const marginInput = getElement<HTMLInputElement>('margin')
-const foregroundInput = getElement<HTMLInputElement>('foreground')
-const backgroundInput = getElement<HTMLInputElement>('background')
-const canvas = getElement<HTMLCanvasElement>('canvas-preview')
-const canvasSize = getElement<HTMLOutputElement>('canvas-size')
-const svgSize = getElement<HTMLOutputElement>('svg-size')
-const svgPreview = getElement<HTMLDivElement>('svg-preview')
-const source = getElement<HTMLPreElement>('source')
-const status = getElement<HTMLOutputElement>('status')
-const presetButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-preset]'))
-
-function getElement<T extends HTMLElement>(id: string): T {
-  const element = document.getElementById(id)
-  if (element === null)
-    throw new Error(`Missing #${id}`)
-  return element as T
-}
-
-function currentType(): PlaygroundCodeType {
-  return typeSelect.value as PlaygroundCodeType
-}
-
-function currentEncodeOptions(type: PlaygroundCodeType) {
-  const margin = Number.parseInt(marginInput.value, 10)
+function encodeOptions(type: PlaygroundCodeType, margin: number): Record<string, number> | undefined {
   if (type === 'qrcode' || type === 'datamatrix' || type === 'pdf417' || type === 'aztec')
     return { margin }
   return undefined
 }
 
-function updatePresetState(type: PlaygroundCodeType): void {
-  for (const button of presetButtons) {
-    const preset = presets[Number(button.dataset.preset)]
-    button.setAttribute('aria-pressed', String(preset.type === type))
-  }
+function propString(name: string, value: string): string {
+  return `${name}="${value}"`
 }
 
-function render(): void {
-  try {
-    const type = currentType()
-    const moduleSize = Number.parseInt(moduleSizeInput.value, 10)
-    const foreground = foregroundInput.value
-    const background = backgroundInput.value
-    const encode = currentEncodeOptions(type)
-    const svg = renderSVG(contentInput.value, {
-      type,
-      encode,
-      moduleSize,
-      foreground,
-      background,
+function codeSample(example: Example): string {
+  const props = [
+    propString('renderer', example.renderer),
+    propString('type', example.type),
+    propString('content', example.content),
+  ]
+
+  if (example.encode !== undefined)
+    props.push(`:encode="${JSON.stringify(example.encode).replaceAll('"', '\'')}"`)
+
+  return [
+    'import { Lolicode } from \'@lolicode/vue\'',
+    '',
+    `<Lolicode ${props.join(' ')} />`,
+  ].join('\n')
+}
+
+const App = defineComponent({
+  name: 'PlaygroundApp',
+  setup() {
+    const activePreset = ref(0)
+    const renderer = ref<LolicodeRenderer>('svg')
+    const content = ref(presets[0].content)
+    const moduleSize = ref(6)
+    const margin = ref(1)
+    const foreground = ref('#111827')
+    const background = ref('#f8fafc')
+
+    const type = computed(() => presets[activePreset.value].type)
+    const encode = computed(() => encodeOptions(type.value, margin.value))
+
+    const currentSample = computed(() => {
+      const props = [
+        propString('renderer', renderer.value),
+        propString('type', type.value),
+        propString('content', content.value),
+        ':module-size="moduleSize"',
+        'foreground="#111827"',
+        'background="#f8fafc"',
+      ]
+
+      if (encode.value !== undefined)
+        props.push(':encode="encode"')
+
+      return [
+        'import { Lolicode } from \'@lolicode/vue\'',
+        '',
+        `<Lolicode ${props.join(' ')} />`,
+      ].join('\n')
     })
 
-    renderCanvas(contentInput.value, {
-      target: canvas,
-      type,
-      encode,
-      moduleSize,
-      foreground,
-      background,
-    })
+    function choosePreset(index: number): void {
+      activePreset.value = index
+      content.value = presets[index].content
+    }
 
-    svgPreview.innerHTML = svg
-    source.textContent = svg
-    canvasSize.value = `${canvas.width} x ${canvas.height}`
-    svgSize.value = `${canvas.width} x ${canvas.height}`
-    status.value = 'ready'
-    updatePresetState(type)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    status.value = message
-  }
-}
+    return () => h('main', { class: 'shell' }, [
+      h('aside', { class: 'sidebar' }, [
+        h('div', { class: 'brand' }, [
+          h('span', { class: 'brand-mark' }, 'LC'),
+          h('div', [
+            h('h1', 'lolicode'),
+            h('p', 'Vue renderer playground'),
+          ]),
+        ]),
+        h('div', { 'aria-label': 'Renderer', 'class': 'renderer-tabs', 'role': 'tablist' }, rendererOptions.map(option =>
+          h('button', {
+            'aria-selected': renderer.value === option,
+            'class': 'renderer-tab',
+            'onClick': () => {
+              renderer.value = option
+            },
+            'role': 'tab',
+            'type': 'button',
+          }, option),
+        )),
+        h('div', { 'aria-label': 'Code presets', 'class': 'preset-list', 'role': 'listbox' }, presets.map((preset, index) =>
+          h('button', {
+            'aria-pressed': activePreset.value === index,
+            'class': 'preset-button',
+            'onClick': () => choosePreset(index),
+            'type': 'button',
+          }, preset.label),
+        )),
+      ]),
 
-for (const button of presetButtons) {
-  button.addEventListener('click', () => {
-    const preset = presets[Number(button.dataset.preset)]
-    typeSelect.value = preset.type
-    contentInput.value = preset.content
-    render()
-  })
-}
+      h('section', { class: 'workspace' }, [
+        h('form', {
+          class: 'controls',
+          onSubmit: (event: SubmitEvent) => event.preventDefault(),
+        }, [
+          h('label', [
+            h('span', 'Content'),
+            h('input', {
+              onInput: (event: Event) => {
+                content.value = (event.target as HTMLInputElement).value
+              },
+              type: 'text',
+              value: content.value,
+            }),
+          ]),
+          h('label', [
+            h('span', 'Module'),
+            h('input', {
+              max: 20,
+              min: 1,
+              onInput: (event: Event) => {
+                moduleSize.value = Number((event.target as HTMLInputElement).value)
+              },
+              step: 1,
+              type: 'number',
+              value: moduleSize.value,
+            }),
+          ]),
+          h('label', [
+            h('span', 'Margin'),
+            h('input', {
+              max: 12,
+              min: 0,
+              onInput: (event: Event) => {
+                margin.value = Number((event.target as HTMLInputElement).value)
+              },
+              step: 1,
+              type: 'number',
+              value: margin.value,
+            }),
+          ]),
+          h('label', { class: 'color-field' }, [
+            h('span', 'Ink'),
+            h('input', {
+              onInput: (event: Event) => {
+                foreground.value = (event.target as HTMLInputElement).value
+              },
+              type: 'color',
+              value: foreground.value,
+            }),
+          ]),
+          h('label', { class: 'color-field' }, [
+            h('span', 'Paper'),
+            h('input', {
+              onInput: (event: Event) => {
+                background.value = (event.target as HTMLInputElement).value
+              },
+              type: 'color',
+              value: background.value,
+            }),
+          ]),
+        ]),
 
-typeSelect.addEventListener('change', () => {
-  const preset = presets.find(item => item.type === currentType())
-  if (preset !== undefined)
-    contentInput.value = preset.content
-  render()
+        h('section', { class: 'hero-preview' }, [
+          h('div', { class: 'preview-stage' }, [
+            h(Lolicode, {
+              background: background.value,
+              content: content.value,
+              encode: encode.value,
+              foreground: foreground.value,
+              moduleSize: moduleSize.value,
+              renderer: renderer.value,
+              type: type.value,
+            }),
+          ]),
+          h('pre', { class: 'code-sample' }, currentSample.value),
+        ]),
+
+        h('section', { class: 'example-grid' }, examples.map(example =>
+          h('article', { class: 'example-panel' }, [
+            h('div', { class: 'panel-header' }, [
+              h('h2', example.title),
+              h('span', example.renderer),
+            ]),
+            h('div', { class: 'example-stage' }, [
+              h(Lolicode, {
+                content: example.content,
+                encode: example.encode,
+                moduleSize: 5,
+                renderer: example.renderer,
+                type: example.type,
+              }),
+            ]),
+            h('pre', { class: 'code-sample compact' }, codeSample(example)),
+          ]),
+        )),
+      ]),
+    ])
+  },
 })
 
-for (const input of [contentInput, moduleSizeInput, marginInput, foregroundInput, backgroundInput])
-  input.addEventListener('input', render)
-
-render()
+createApp(App).mount('#app')

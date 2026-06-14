@@ -13,7 +13,9 @@
     "@lolicode/core": "workspace:^",
     "@lolicode/renderer-canvas": "workspace:^",
     "@lolicode/renderer-svg": "workspace:^",
-    "@lolicode/renderer-terminal": "workspace:^"
+    "@lolicode/renderer-terminal": "workspace:^",
+    "@lolicode/vue": "workspace:^",
+    "vue": "catalog:frontend"
   },
   "devDependencies": {
     "tsx": "catalog:cli",
