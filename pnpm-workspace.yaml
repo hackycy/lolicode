@@ -32,6 +32,6 @@ catalogs:
     yaml: ^2.8.3
   types:
     '@types/node': ^24.12.2
-onlyBuiltDependencies:
-  - esbuild
-  - simple-git-hooks
+allowBuilds:
+  esbuild: true
+  simple-git-hooks: true
